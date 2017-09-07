@@ -66,12 +66,12 @@ function service_util.subscribe_mc(mc_name)
 	--local c = service_util.datacenter_get(mc_name)
 	local c = service_util.sharedate_query(mc_name)[1]
 	local subscribe_info = {}
-	subscribe_info.ch = mc.new{
+	subscribe_info.ch = mc.new {
 		channel = c,
 		dispatch = function(channel,source,cmd,...)
 			local t_fn = subscribe_info.mc_handler[cmd]
-			if fn ~= nil then
-				for i,v in ipairs(t) do 
+			if t_fn ~= nil then
+				for i,v in ipairs(t_fn) do 
 					v(source,...)
 				end
 			end
@@ -92,7 +92,7 @@ end
 
 function service_util.add_subscribe_handler(info,cmd,fn)
 	local old_fn = info.mc_handler[cmd]
-	if old_fn ~= n then
+	if old_fn ~= nil then
 		old_fn = {}
 	end
 	table.insert(old_fn,fn)
@@ -123,8 +123,6 @@ function service_util.register_proxy_handle_sproto(sproto_host,requst_handle,res
 		return sproto_host:dispatch(...)
 	end
 	service_util.register_proxy_handle_custom(sproto_host_dispatch,function(session,source,type,name,...)
-		print(type)
-		print(name)
 		if type == "REQUEST" then
 			local fn = requst_handle[name]
 			if fn then
