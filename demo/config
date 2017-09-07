@@ -1,0 +1,27 @@
+root = "./"
+thread = 8
+harbor = 0
+start = "main"
+node_name = "demo"
+bootstrap = "snlua bootstrap"
+lualoader = root .. "lualib/loader.lua"
+
+luaservice = root.."service/?.lua;"
+             ..root.."demo/service/?.lua;"
+			 
+cpath = root.."cservice/?.so"
+lua_path = root.."lualib/?.lua;"..
+           root.."lualib/?/init.lua;"..
+           root.."lualib/skynet/db/?.lua;"..
+		   root.."demo/?.lua;"..
+           root.."demo/base/?.lua"
+		   
+lua_cpath = root.."luaclib/?.so"
+--daemon 	= root .. "/start/".. node_name..".pid"
+--logpath    = "."
+--logger 	   = "./log/bgame.log"
+--loglevel   = 1     -- 1 debug , 2 release
+--logservice = "mylogger"
+
+gate_port = 8884
+gate_max_client = 1024

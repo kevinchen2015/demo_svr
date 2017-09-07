@@ -1,0 +1,157 @@
+.package {
+  type 0 : integer
+  session 1 : integer
+}
+
+.HeroComment {
+	id          0 : integer
+	up_count    1 : integer
+	comment_str 2 : string
+	author_uid  3 : string
+	author_name 4 : string
+	logtime     5 : integer
+}
+
+
+.KVData {
+	key 0 : string
+	value 1 : string
+
+}
+
+heartbeat 1 {}
+
+login 2 {
+	request {
+		client_md5 0 : string
+	}
+	response {
+		ret       0 : integer
+		uid       1 : string
+	}
+}
+
+chat_msg 3 {
+	request {
+		chat_str 0 : string
+	}
+	response {
+		ret 0 : integer
+	}
+}
+
+chat_msg_broadcast 4 {
+	request {
+		chat_uid       0 : string
+		chat_nick_name 1 : string
+		chat_str       2 : string
+	}
+}
+
+modify_nickname 5 {
+	request {
+		new_nick_name 0 : string
+	}
+	response {
+		ret       0 : integer
+	}
+}
+
+user_kick 6 {
+	request {
+		reason 0 : integer
+	}
+}
+
+get_base_info 7 {
+	request {
+		flag 0 : integer
+	}
+	response {
+		nick_name 0 : string
+	}
+}
+
+get_comment_list 8 {
+	request {
+		hero_id 0 : integer
+	}
+	response {
+		comment_list 0 : *HeroComment
+	}
+}
+
+up_comment 9 {
+	request {
+		comment_id 0 : integer
+	}
+	response {
+		comment_id 0 : integer
+		up_count   1 : integer
+	}
+}
+
+new_comment 10 {
+	request {
+		hero_id     0 : integer
+		comment_str 1 : string
+	}
+	response {
+		ret         0 : integer
+		comment_id  1 : integer
+	}
+}
+
+
+set_kv_single 11 {
+	request {
+		key 0 : string
+		value 1 : string
+		sign 2 : string	
+	}
+	response {
+		ret 0 : integer
+	}
+}
+
+
+get_kv_single 12 {
+	request {
+		key 0 : string
+	}
+	response {
+		ret 0 : integer
+		value 1 : string
+	}
+
+}
+
+
+set_kv_multi 13 {
+	request {
+		kv_list 0: *KVData
+	}
+
+	response {
+		ret 0 : integer
+	}
+
+
+
+}
+
+
+notice_msg_broadcast 14 {
+	request {
+		sender       0 : string
+		channel      1 : integer
+		content      2 : string
+	}
+}
+
+
+game_server_handshake 15 {
+	request {
+		handshake 0 : string		
+	}
+}
