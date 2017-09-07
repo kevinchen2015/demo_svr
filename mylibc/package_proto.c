@@ -52,6 +52,8 @@ write_size(uint8_t * buffer, int len) {
 	buffer[1] = len & 0xff;
 }
 
+static uint8_t* g_buffer;
+static size_t   g_buffer_size;
 static int
 encode(lua_State *L) {
 	size_t len;
@@ -61,7 +63,16 @@ encode(lua_State *L) {
 	}
 	size_t body_len = len;
 	len += PACKAGE_HEAD_SIZE;
-	uint8_t* buffer = (uint8_t*)malloc(len+2);
+
+	if(len+2>g_buffer_size){
+		if(g_buffer){
+			free(g_buffer);
+			g_buffer_size = 0;
+		}
+		g_buffer_size = len+2;
+		g_buffer = (uint8_t*)malloc(g_buffer_size);
+	}
+	uint8_t* buffer = g_buffer;
 	write_size(buffer, len); //length
 	uint8_t* ptr = buffer + 2;
 	int index = 3;
@@ -72,7 +83,7 @@ encode(lua_State *L) {
 	}
 	memcpy(ptr + PACKAGE_HEAD_SIZE, p, body_len);
 	lua_pushlstring(L,buffer,len+2);
-	free(buffer);
+
 	return 1;
 }
 
@@ -99,6 +110,9 @@ decode(lua_State *L) {
 
 int
 luaopen_package_proto(lua_State *L) {
+	g_buffer = (uint8_t*)0;
+	g_buffer_size = 0;
+
 	luaL_Reg reg[] = {
 		{"decode", decode },
 		{"encode", encode },
