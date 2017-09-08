@@ -95,8 +95,8 @@ decode(lua_State *L) {
 		return luaL_error(L, "Invalid size (too long) of data : %d", (int)sz);
 	}
 	char* p = msg;
-	msg += PACKAGE_HEAD_SIZE;
-	sz -= PACKAGE_HEAD_SIZE;
+	//msg += PACKAGE_HEAD_SIZE;
+	//sz  -= PACKAGE_HEAD_SIZE;
 	lua_pushlstring(L,msg,sz);
 	for(int i = 0; i < 4; ++i)
 	{

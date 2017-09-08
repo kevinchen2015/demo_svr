@@ -5,6 +5,7 @@ local datasheet = require "skynet.datasheet"
 local server_def = require "server_def"
 local sprotoloader = require "sprotoloader"
 local datacenter = require "skynet.datacenter"
+local package_proto = require "package.proto"
 
 local service_util = {}
 local uid2agent = {}
@@ -34,11 +35,11 @@ function service_util.get_info_by_uid(uid)
 	return uid2info[uid]
 end
 
-function service_util.query_agent_by_uid(uid)
+function service_util.get_agent_by_uid(uid)
 	return uid2agent[uid]
 end
 
-function service_util.query_agent_by_uid(agent)
+function service_util.get_uid_by_agent(agent)
 	return agent2uid[agent]
 end
 
@@ -112,7 +113,10 @@ function service_util.register_proxy_handle_custom(upack_fn,dispatch_fn)
 	id = server_def.proxy_proto_id,
 	pack = skynet.pack,
 	unpack = function(msg,size)
-		return upack_fn(msg, size)
+		local head = {}
+		local body = nil
+		body,head.des_type,head.des_id,head.src_type,head.src_id = package_proto(msg,size)
+		return upack_fn(body,body:len(),head)
 	end,
 	dispatch = dispatch_fn
 	}

@@ -1,8 +1,6 @@
 local geteserver = require "snax.gateserver"
 local crypt = require "skynet.crypt"
 local skynet = require "skynet"
---local pb = require "protobuf"
-local proto = require "package.proto"
 local server_def = require "server_def"
 local debug_trace = require "debug_trace"
 local service_util = require "service_util"

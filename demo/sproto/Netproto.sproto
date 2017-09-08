@@ -12,11 +12,9 @@
 	logtime     5 : integer
 }
 
-
 .KVData {
 	key 0 : string
 	value 1 : string
-
 }
 
 heartbeat 1 {}
@@ -102,7 +100,6 @@ new_comment 10 {
 	}
 }
 
-
 set_kv_single 11 {
 	request {
 		key 0 : string
@@ -113,7 +110,6 @@ set_kv_single 11 {
 		ret 0 : integer
 	}
 }
-
 
 get_kv_single 12 {
 	request {
@@ -135,11 +131,7 @@ set_kv_multi 13 {
 	response {
 		ret 0 : integer
 	}
-
-
-
 }
-
 
 notice_msg_broadcast 14 {
 	request {
@@ -148,7 +140,6 @@ notice_msg_broadcast 14 {
 		content      2 : string
 	}
 }
-
 
 game_server_handshake 15 {
 	request {

@@ -8,6 +8,7 @@ lualoader = root .. "lualib/loader.lua"
 
 luaservice = root.."service/?.lua;"
              ..root.."demo/service/?.lua;"
+             ..root.."demo/?.lua"
 			 
 cpath = root.."cservice/?.so"
 lua_path = root.."lualib/?.lua;"..

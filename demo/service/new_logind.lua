@@ -4,6 +4,7 @@ local crypt = require "skynet.crypt"
 local server_def = require "server_def"
 local debug_trace = require "debug_trace"
 local service_util = require "service_util"
+--local pb = require "protobuf"
 
 
 local gate
