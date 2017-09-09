@@ -102,7 +102,7 @@ end
 
 function on_proxy_message(session,source,msg,sz)
 	
-	local body,des_type,des_id,src_type,src_id = proto.decode(msg,sz)
+	local des_type,des_id,src_type,src_id = proto.decode_head(msg,sz)
 
 	if des_type == 0 then
 		on_self_msg(agent,body,body:len())
@@ -121,8 +121,7 @@ function on_proxy_message(session,source,msg,sz)
 		if des_type == server_def.service_type.login then
 			local des = get_router(des_type,uid)
 			if des ~= nil then
-				--skynet.send(des,"lua","on_message",body,body:len())
-				skynet.redirect(des, agent, "proxy",fd,body,body:len())
+				skynet.redirect(des, agent, "proxy",fd,msg,sz)
 			end
 		else
 			skynet.call(gate,"lua","time_out",fd)

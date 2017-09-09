@@ -95,9 +95,27 @@ decode(lua_State *L) {
 		return luaL_error(L, "Invalid size (too long) of data : %d", (int)sz);
 	}
 	char* p = msg;
-	//msg += PACKAGE_HEAD_SIZE;
-	//sz  -= PACKAGE_HEAD_SIZE;
+	msg += PACKAGE_HEAD_SIZE;
+	sz  -= PACKAGE_HEAD_SIZE;
 	lua_pushlstring(L,msg,sz);
+	for(int i = 0; i < 4; ++i)
+	{
+		unsigned short v = *((unsigned short*)p);
+		v = NET_TO_HOST_UINT16(v);
+		lua_pushinteger(L,v);
+		p += 2;
+	}
+	return 1+4;
+}
+
+static int
+decode_head(lua_State *L) {
+	size_t sz;
+	void* msg = getbuffer(L,1,&sz);
+	if (sz >= 0x10000) {
+		return luaL_error(L, "Invalid size (too long) of data : %d", (int)sz);
+	}
+	char* p = msg;
 	for(int i = 0; i < 4; ++i)
 	{
 		unsigned short v = *((unsigned short*)p);
@@ -114,6 +132,7 @@ luaopen_package_proto(lua_State *L) {
 	g_buffer_size = 0;
 
 	luaL_Reg reg[] = {
+		{"decode_head", decode_head },
 		{"decode", decode },
 		{"encode", encode },
 		{NULL,NULL},
