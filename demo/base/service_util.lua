@@ -113,29 +113,29 @@ function service_util.register_proxy_handle_custom(upack_fn,dispatch_fn)
 	id = server_def.proxy_proto_id,
 	pack = skynet.pack,
 	unpack = function(msg,size)
-		local head = {}
-		local body = nil
-		body,head.des_type,head.des_id,head.src_type,head.src_id = package_proto(msg,size)
-		return upack_fn(body,body:len(),head)
+		return upack_fn(msg,size)
 	end,
 	dispatch = dispatch_fn
 	}
 end
 
 function service_util.register_proxy_handle_sproto(sproto_host,requst_handle,response_handle)
-	local sproto_host_dispatch = function(...)
-		return sproto_host:dispatch(...)
+	local sproto_host_dispatch = function(msg,sz)
+		local head = {}
+		local body = nil
+		body,head.des_type,head.des_id,head.src_type,head.src_id = package_proto.decode(msg,sz)
+		return head,sproto_host:dispatch(body,body:len())
 	end
-	service_util.register_proxy_handle_custom(sproto_host_dispatch,function(session,source,type,name,...)
+	service_util.register_proxy_handle_custom(sproto_host_dispatch,function(session,source,head,type,name,...)
 		if type == "REQUEST" then
 			local fn = requst_handle[name]
 			if fn then
-				fn(source,...)
+				fn(source,head,...)
 			end
 		else
 			local fn = response_handle[name]
 			if fn then
-				fn(source,...)
+				fn(source,head,...)
 			end
 		end
 	end)

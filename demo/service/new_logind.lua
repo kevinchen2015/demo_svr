@@ -37,7 +37,7 @@ function mc_on_logout(source,uid)
 end
 -------------------------------------------------------------------
 --login
-function request_cmd.login(source,args,response,ud)
+function request_cmd.login(source,head,args,response,ud)
 	local token = args.client_md5
 	local err = 0
 	local uid = 0

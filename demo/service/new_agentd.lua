@@ -105,7 +105,7 @@ function on_proxy_message(session,source,msg,sz)
 	local des_type,des_id,src_type,src_id = proto.decode_head(msg,sz)
 
 	if des_type == 0 then
-		on_self_msg(agent,body,body:len())
+		on_self_msg(agent,msg,sz)
 		return
 	end
 
@@ -115,7 +115,7 @@ function on_proxy_message(session,source,msg,sz)
 	if uid ~= nil then
 		local des = get_router(des_type,uid)
 		if des ~= nil then
-			skynet.redirect(des, agent, "proxy",fd,body,body:len())
+			skynet.redirect(des, agent, "proxy",fd,msg,sz)
 		end
 	else
 		if des_type == server_def.service_type.login then
