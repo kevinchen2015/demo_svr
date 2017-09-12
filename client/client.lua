@@ -4,8 +4,15 @@ package.path = "lualib/?.lua;examples/?.lua"
 local socket = require "client.socket"
 local skynet = require "skynet"
 
+--简单的socket封装，只提供链接，发送，接收，解析gate对应的封包结构，不做心跳检测，不做重连处理
+--提供在接收包协程做recv_cb + msg handle 的处理，也提供默认的处理方式：放入队列，另外的协程获取处理
+
 local client = {}
 local client_mt = {__index = client}
+
+local function default_recv_handle(cli,msg)
+	table.insert(cli.recv_msg_queue,msg)
+end
 
 function client.create_client(recv_cb)
 	local new_client = {
@@ -13,27 +20,33 @@ function client.create_client(recv_cb)
 		last="",
 		ip="",
 		port=0,
-		recv_cb = recv_cb
+		recv_msg_queue = {},
+		recv_cb = recv_cb or default_recv_handle,
 	}
 	return setmetatable(new_client, client_mt)
 end
+
+function client:read_one_msg_from_queue()
+	if #self.recv_msg_queue > 0 then
+		local ret = self.recv_msg_queue[1]
+		table.remove(self.recv_msg_queue,1)
+		return ret
+	else
+		return nil
+	end
+end
+
 
 function client:connect(ip,port)
 	self:close()
 	self.ip = ip
 	self.port = port
-	self.fd = socket.connect(ip, port)
-
-	if self.fd ~= nil then
-		skynet.timeout(1000,function()
-			if self:is_connect() == false then
-				return
-			end
-			print("heat check!")
-		end)
+	local ret = socket.connect(ip, port)
+	if type(ret) == "number" then
+		self.fd = ret
 		skynet.fork(self.dispatch_package_text,self,self.recv_cb)
 	end
-	return self.fd
+	return self.fd,ret
 end
 
 function client:reconnect()
@@ -49,23 +62,20 @@ end
 
 function client:close()
 	if self.fd ~= nil then
-		socket.closed(self.fd)
+		local fd = self.fd
 		self.fd = nil
 		self.last = ""
-
-		print("client:close()")
+		self.recv_msg_queue = {}
+		socket.close(fd)
 	end
 end
 
 function client:send(text)
-	if self.fd == nil then
-		self:reconnect()
-		if self.fd == nil then
-			return
-		end
+	if self:is_connect() then
+		local package = string.pack(">s2", text)
+		return socket.send(self.fd, package)
 	end
-	local package = string.pack(">s2", text)
-	socket.send(self.fd, package)
+	return 0
 end
 
 local function unpack_package(text)
@@ -91,38 +101,28 @@ local function recv_package(fd,last)
 		return nil, last
 	end
 	if r == "" then
-		--error "Server closed"
+		--print("Server closed")
 		return nil,"",1
 	end
 	return unpack_package(last .. r)
 end
 
 function client:dispatch_package_text(recv_cb)
-	while true do
+	while self.fd do
+
+		skynet.sleep(0)
+
 		local v
 		v, last,error = recv_package(self.fd,self.last)
 		if error ~= nil then
 			self:close()
-			local fn = function()
-				if self:is_connect() then
-					return
-				end
-				self:reconnect()
-
-				if self.fd == nil then
-					skynet.timout(500,fn)
-				end
-			end
-			skynet.timout(500,fn)
 			break
 		end
 
-		if not v then
-			break
+		if v then
+			recv_cb(self,v)
 		end
-		--print("recv:"..v)
-		--todo dispatch msg
-		recv_cb(self,v)
+
 	end
 end
 
