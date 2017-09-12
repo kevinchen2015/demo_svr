@@ -1,5 +1,3 @@
-package.cpath = "luaclib/?.so"
-package.path = "lualib/?.lua;examples/?.lua"
 
 local socket = require "client.socket"
 local skynet = require "skynet"
