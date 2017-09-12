@@ -87,34 +87,37 @@ local function unpack_package(text)
 	if size < s+2 then
 		return nil, text
 	end
-	return text:sub(3,2+s), text:sub(3+s)
+	local r,l = text:sub(3,2+s), text:sub(3+s)
+	return r,l
 end
 
-local function recv_package(fd,last)
+local function recv_package(cli)
 	local result
-	result, last = unpack_package(last)
+	result, cli.last = unpack_package(cli.last)
 	if result then
-		return result, last
+		return result, cli.last
 	end
-	local r = socket.recv(fd)
+	local r = socket.recv(cli.fd)
 	if not r then
-		return nil, last
+		return nil, cli.last
 	end
 	if r == "" then
 		--print("Server closed")
 		return nil,"",1
 	end
-	return unpack_package(last .. r)
+	return unpack_package(cli.last .. r)
 end
 
 function client:dispatch_package_text(recv_cb)
 	while self.fd do
 
 		skynet.sleep(0)
-
 		local v
-		v, last,error = recv_package(self.fd,self.last)
-		if error ~= nil then
+		v, self.last,err_id = recv_package(self)
+		if v then
+		print(v)
+		end
+		if err_id ~= nil then
 			self:close()
 			break
 		end
