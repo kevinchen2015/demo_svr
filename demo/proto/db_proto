@@ -1,0 +1,23 @@
+
+¸
+db_proto.pbproto.db"&
+
+msg_struct
+
+id (
+body ("]
+common_db_req
+session (
+type (
+	client_id (
+cmd (	
+param (	"b
+common_db_rsp
+session (
+type (
+	client_id (
+result (
+content (	*4
+msg_id
+common_db_req_id
+common_db_rsp_id
