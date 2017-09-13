@@ -88,7 +88,7 @@ function get_router(des_type,uid)
 	if service then
 		local index = 1
 		if #service > 1 then
-			index = uid%#service
+			index = math.fmod(uid,#service)
 		end
 		if index == 0 then
 			index = 1
