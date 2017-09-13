@@ -23,7 +23,7 @@ function on_net_message(session,source,msg,size)
 		local ret,rsp_id = fn(msg_struct.body,msg_struct.body:len())
 		if ret then
 			local rsp = pb.encode("proto.db.msg_struct",{id = rsp_id,body = ret})
-			skynet.call(source,"lua","send",rsp)
+			skynet.send(source,"lua","send",rsp)
 		end
 	else
 		print("request id is invaild! id:"..msg_struct.id)
