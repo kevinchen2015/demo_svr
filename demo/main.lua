@@ -23,5 +23,6 @@ skynet.start(function()
 		port = port,
 		maxclient = tonumber(max_client),
 		servername = "gated",
+		nodelay = true,
 	})
 end)

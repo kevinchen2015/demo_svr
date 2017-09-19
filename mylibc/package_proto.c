@@ -13,6 +13,8 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "skynet_malloc.h"
+
 #define PACKAGE_HEAD_SIZE 8
 /*
 typedef struct{
@@ -63,7 +65,7 @@ encode(lua_State *L) {
 	size_t body_len = len;
 	len += PACKAGE_HEAD_SIZE;
 
-	uint8_t* buffer = (uint8_t*)malloc(len+2);
+	uint8_t* buffer = (uint8_t*)skynet_malloc(len+2);
 	write_size(buffer, len); //length
 	uint8_t* ptr = buffer + 2;
 	int index = 3;
@@ -75,7 +77,7 @@ encode(lua_State *L) {
 	memcpy(ptr + PACKAGE_HEAD_SIZE, p, body_len);
 	lua_pushlstring(L,buffer,len+2);
 
-	free(buffer);
+	skynet_free(buffer);
 
 	return 1;
 }
@@ -111,7 +113,7 @@ decode_head(lua_State *L) {
 	char* p = msg;
 	for(int i = 0; i < 4; ++i)
 	{
-		unsigned short v = *((unsigned short*)p);
+		unsigned short v = *((unsigned short*)p);  
 		v = NET_TO_HOST_UINT16(v);
 		lua_pushinteger(L,v);
 		p += 2;
@@ -121,7 +123,6 @@ decode_head(lua_State *L) {
 
 int
 luaopen_package_proto(lua_State *L) {
-
 
 	luaL_Reg reg[] = {
 		{"decode_head", decode_head },
