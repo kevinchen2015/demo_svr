@@ -13,12 +13,12 @@ local agent2uid = {}
 local uid2info = {}
 
 
-local function _on_login(uid,agent)
+local function _on_login(source,uid,agent)
 	uid2agent[uid] = agent
 	agent2uid[agent] = uid
 end
 
-local function _on_logout(uid)
+local function _on_logout(source,uid)
 	local agent = uid2agent[uid]
 	if agent then
 		agent2uid[agent] = nil
@@ -93,7 +93,7 @@ end
 
 function service_util.add_subscribe_handler(info,cmd,fn)
 	local old_fn = info.mc_handler[cmd]
-	if old_fn ~= nil then
+	if old_fn == nil then
 		old_fn = {}
 	end
 	table.insert(old_fn,fn)
