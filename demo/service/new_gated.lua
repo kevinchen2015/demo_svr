@@ -1,6 +1,8 @@
-local geteserver = require "snax.gateserver"
+local gateserver = require "snax.gateserver"
 local crypt = require "skynet.crypt"
 local skynet = require "skynet"
+--local pb = require "protobuf"
+local proto = require "package.proto"
 local server_def = require "server_def"
 local debug_trace = require "debug_trace"
 local service_util = require "service_util"
@@ -16,7 +18,6 @@ local fd2uid_map = {}
 local proxy = {}
 local gate_cmd = {}
 local free_agent_pool = {}
-
 
 local function unbind_fd_uid_by_uid(uid)
 	local fd = uid2fd_map[uid]
@@ -47,8 +48,8 @@ local function notify_agent_close(agent,fd)
 	table.insert(free_agent_pool,agent)
 end
 
-function on_user_login(uid,agent)
-	gate_mc_channel:publish("on_user_login",uid,agent)
+function on_user_login(uid,agent,username)
+	gate_mc_channel:publish("on_user_login",uid,agent,username)
 end
 
 function on_user_logout(uid)
@@ -56,16 +57,14 @@ function on_user_logout(uid)
 end
 
 local function on_client_close(fd)
-
 	local uid = fd2uid_map[fd]
 	if uid ~= nil then
 		on_user_logout(uid)
 	end
-
 	unbind_fd_uid_by_fd(fd)
 	local agent = fd2agent[fd]
 	if agent then
-		print("agent set null,fd:"..fd)
+		skynet.error("agent set null,fd:"..fd)
 		agent2fd[agent] = nil
 		fd2agent[fd] = nil
 		notify_agent_close(agent,fd)
@@ -73,15 +72,15 @@ local function on_client_close(fd)
 end
 
 local function client_close(fd)
-	geteserver.closeclient(fd)
+	gateserver.closeclient(fd)
 	on_client_close(fd)
 end
 
 --------------------------------------------------------------
 
 function server_handle.connect(fd,msg)
-	print("connect:"..fd.."|"..msg)
-	geteserver.openclient(fd)
+	skynet.error("connect:"..fd.."|"..msg)
+	gateserver.openclient(fd)
 	local agent = nil
 	if #free_agent_pool > 0 then
 		agent = free_agent_pool[1]
@@ -91,18 +90,17 @@ function server_handle.connect(fd,msg)
 	end
 	fd2agent[fd] = agent
 	agent2fd[agent] = fd
-
 	skynet.call(agent,"lua","init",fd,skynet.self())
-	print("fd:"..fd.." set to fd2agent")
+	skynet.error("fd:"..fd.." set to fd2agent")
 end
 
 function server_handle.disconnect(fd)
-	print("disconnect:"..fd)
+	skynet.error("disconnect:"..fd)
 	on_client_close(fd)
 end
 
 function server_handle.message(fd,msg,sz)
-	print("message:"..fd.." msg size:"..sz)
+	--skynet.error("message:"..fd.." msg size:"..sz)
 	local agent = fd2agent[fd]
 	if agent == nil then
 		client_close(fd)
@@ -131,34 +129,25 @@ function gate_cmd.time_out(fd)
 end
 
 function gate_cmd.regist_proxy(id,service)
-	print("gate_cmd.regist_proxy("..id)
-
 	if proxy[id] == nil then
 		proxy[id] = {}
 	end
 	table.insert( proxy[id], service )
 end
 
-function gate_cmd.login_rsp(err,agent,acc,uid,token)
+function gate_cmd.login_rsp(err,agent,acc,uid,username)
 	if agent2fd[agent] == nil then
 		print("agent error!")
 		return
 	end
-
 	local fd = agent2fd[agent]
 	if err ~= 0 then
-		print("login err!")
-		
+		print("login err!")	
 		if agent ~= nil then
 			skynet.call(agent,"lua","send","login_rsp",err)
 		end
 		client_close(fd)
 	else
-		print("login sucess, agent:"..agent)
-		for k,v in pairs(fd2agent) do
-			print(k,v)
-		end
-		--print(agent)
 		if agent ~= nil then
 			if fd2uid_map[fd] ~= uid then
 				local last_fd = uid2fd_map[uid]
@@ -168,9 +157,9 @@ function gate_cmd.login_rsp(err,agent,acc,uid,token)
 			end
 
 			bind_fd_uid(fd,uid)
-			skynet.call(agent,"lua","on_login",uid,acc,token)
-
-			on_user_login(uid,agent)
+			print("gate_cmd.login_rsp uid "..uid)
+			skynet.call(agent,"lua","on_login",uid,acc,username)
+			on_user_login(uid, agent,username)
 		else
 			print("agent is error!")
 			client_close(fd)
@@ -193,6 +182,18 @@ function gate_cmd.on_server_start_finished()
 	gate_mc_channel:publish("on_start_finished")
 end
 
+-----------------------------------------------------------------------------
+--from other node
+function gate_cmd.on_route_message(source,msg,sz,uid)
+	local fd = uid2fd_map[uid]
+	if fd then
+		local agent = fd2agent[fd]
+		if agent then
+			skynet.send(agent,"lua","send_raw",msg,sz)
+		end
+	end
+end
+
 --------------------------------------------------------------------------
 
 skynet.register_protocol({
@@ -206,7 +207,7 @@ skynet.register_protocol {
 	pack = skynet.pack
 }
 
-geteserver.start(server_handle)
+gateserver.start(server_handle)
 
 
 

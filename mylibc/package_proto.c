@@ -2,6 +2,7 @@
 
 extern "C" {
 #endif
+
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -65,20 +66,27 @@ encode(lua_State *L) {
 	size_t body_len = len;
 	len += PACKAGE_HEAD_SIZE;
 
-	uint8_t* buffer = (uint8_t*)skynet_malloc(len+2);
-	write_size(buffer, len); //length
-	uint8_t* ptr = buffer + 2;
+	int t = lua_type(L, 7);
+	int pack_len = 0; 
+	if(t == LUA_TBOOLEAN)
+	{
+		pack_len = 2;
+	}
+	uint8_t* buffer = (uint8_t*)skynet_malloc(len+pack_len);
+	if(pack_len > 0)
+		write_size(buffer, len); //length
+
+	uint8_t* ptr = buffer + pack_len;
 	int index = 3;
 	for(int i=0;i < 4;++i)
 	{
-		int sz = luaL_checkinteger(L,index+i);
-		write_size(ptr + i*2 ,sz);
+		int n = luaL_checkinteger(L,index+i);
+		write_size(ptr + i*2 ,n);
 	}
 	memcpy(ptr + PACKAGE_HEAD_SIZE, p, body_len);
-	lua_pushlstring(L,buffer,len+2);
+	lua_pushlstring(L,buffer,len+pack_len);
 
 	skynet_free(buffer);
-
 	return 1;
 }
 
@@ -121,11 +129,38 @@ decode_head(lua_State *L) {
 	return 4;
 }
 
+static int
+modify_head(lua_State* L){
+	const void * buffer = NULL;
+	int t = lua_type(L, 1);
+	uint8_t* p = NULL;
+	size_t sz;
+	int i = 0;
+	if (t == LUA_TUSERDATA || t == LUA_TLIGHTUSERDATA) {
+		buffer = lua_touserdata(L, 1);
+		sz = luaL_checkinteger(L, 2);
+	}
+	else
+	{
+		luaL_argerror(L, index, "Need a userdata");
+		return NULL;
+	}
+	p = buffer;
+	for( i = 0; i < 4; ++i)
+	{
+		int n =  luaL_checkinteger(L,3+i);
+		write_size(p + i*2 ,n);
+	}
+	lua_pushinteger(L,1);
+	return 1;
+}
+
 int
 luaopen_package_proto(lua_State *L) {
 
 	luaL_Reg reg[] = {
 		{"decode_head", decode_head },
+		{"modify_head", modify_head },
 		{"decode", decode },
 		{"encode", encode },
 		{NULL,NULL},

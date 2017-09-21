@@ -1,0 +1,33 @@
+root = "./"
+thread = 8
+harbor = 0
+start = "center_svr"
+bootstrap = "snlua bootstrap"
+lualoader = root .. "skynetlib/lualib/loader.lua"
+preload = root.."work/server/preload/preload.lua"
+luaservice = root.."skynetlib/service/?.lua;"
+             ..root.."work/server/?.lua;"
+             ..root.."work/server/service/?.lua"
+cpath = root.."skynetlib/cservice/?.so"
+lua_path = root.."skynetlib/lualib/?.lua;"..
+           root.."skynetlib/lualib/?/init.lua;"..
+           root.."skynetlib/lualib/skynet/db/?.lua;"..
+           root.."work/server/?.lua;"..
+           root.."work/server/preload/?.lua;"..
+           root.."work/config/?.lua;"..
+           root.."work/server/helper/?.lua;"..
+           root.."work/server/helper/config/?.lua;"..
+           root.."work/server/logic/?.lua;"..
+		   root.."work/server/base/?.lua;"..
+           root.."work/server/util/?.lua"
+lua_cpath = root.."skynetlib/luaclib/?.so"
+--daemon 	= root .. "/start/".. node_name..".pid"
+--logpath    = "."
+--logger 	   = "./log/bgame.log"
+--loglevel   = 1     -- 1 debug , 2 release
+--logservice = "mylogger"
+
+
+--static node config
+node_config = root.."server_config/static_node_config.lua"
+node_name = "center_node"

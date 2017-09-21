@@ -43,6 +43,10 @@ function service_util.get_uid_by_agent(agent)
 	return agent2uid[agent]
 end
 
+function service_util.get_all_agent()
+	return uid2agent
+end
+
 function service_util.sharedate_create(key,value)
 	datasheet_builder.new(key,value)
 end
@@ -113,7 +117,7 @@ function service_util.register_proxy_handle_custom(upack_fn,dispatch_fn)
 	id = server_def.proxy_proto_id,
 	pack = skynet.pack,
 	unpack = function(msg,size)
-		return upack_fn(msg,size)
+		return upack_fn(msg, size)
 	end,
 	dispatch = dispatch_fn
 	}
@@ -126,16 +130,22 @@ function service_util.register_proxy_handle_sproto(sproto_host,requst_handle,res
 		body,head.des_type,head.des_id,head.src_type,head.src_id = package_proto.decode(msg,sz)
 		return head,sproto_host:dispatch(body,body:len())
 	end
-	service_util.register_proxy_handle_custom(sproto_host_dispatch,function(session,source,head,type,name,...)
+	service_util.register_proxy_handle_custom(sproto_host_dispatch,function(session,source,head,type,name,args, response)
 		if type == "REQUEST" then
 			local fn = requst_handle[name]
 			if fn then
-				fn(source,head,...)
+				local r = fn(source,head,args)
+				if r == nil then
+            		return nil
+        		end
+        		if response then
+            		return response(r)
+        		end
 			end
 		else
 			local fn = response_handle[name]
 			if fn then
-				fn(source,head,...)
+				fn(source,head,args)
 			end
 		end
 	end)

@@ -1,0 +1,32 @@
+.package {
+  type 0 : integer
+  session 1 : integer
+}
+
+
+match_request 1 {
+	request {
+		match_type 0 : integer
+	}
+	response {
+		ret 0 : integer
+	}
+}
+
+match_cancle 2 {
+	request {
+		match_type 0 : integer
+	}
+	response {
+		ret 0 : integer
+	}
+}
+
+match_result 3 {
+	request {
+		ret 0 : integer
+		group_id 1 :integer
+		room_id  2 :integer
+		uid_list 3 : *integer
+	}
+}
