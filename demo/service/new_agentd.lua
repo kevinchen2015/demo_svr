@@ -124,7 +124,7 @@ function on_proxy_message(session,source,msg,sz)
 	--proxy msg
 	local agent = skynet.self()
 	local uid = user_id
-	if uid ~= nil then
+	if uid ~= nil and uid ~= 0 then
 		local des = get_router(des_type, uid)
 		if des ~= nil then
 			skynet.redirect(des, agent, "proxy",fd,msg,sz)
