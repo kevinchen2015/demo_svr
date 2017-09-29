@@ -158,7 +158,7 @@ void on_recv_(void* data, unsigned int len, void* user_data)
 	lua_pushlstring(L,(const char*)data,len);
 	lua_pushinteger(L, len);
 	lua_pushinteger(L, mq.lua_cb_param_);
-	lua_call(L, 3, 1);
+	lua_call(L, 3, 0);
 }
 
 static int
