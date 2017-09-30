@@ -17,7 +17,7 @@ smq.so : libmq.c
 	cp smq.so /usr/maidong/skynet/luaclib/
 
 rdkafka.so : librdkafka.c
-	$(CC) $(CFLAGS) -shared -o $@ -I../.. -I$(LUADIR) -I$(SKYNETDIR) -lrdkafka -lpthread -lrt  $^
+	$(CC) $(CFLAGS) -shared -o $@ -I../.. -I$(LUADIR) -I$(SKYNETDIR) -lrdkafka -lz -lpthread -lrt $^
 	cp rdkafka.so /usr/maidong/skynet/luaclib/
 
 clean :
