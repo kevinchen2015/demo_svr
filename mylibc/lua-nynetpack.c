@@ -27,6 +27,14 @@
 
 #define NY_HEAD_SIZE 10    //package head id:2  ,  lenght:4   , connect_id:4
 
+//void* my_malloc(size_t size)
+//{
+	//printf("\n\r my_malloc size:%d\n",size);
+	//assert(size < 256*1024);
+//	return skynet_malloc(size);
+//}
+
+#define SKYNET_MALLOC skynet_malloc
 
 struct netpack {
 	int id;
@@ -40,7 +48,7 @@ struct uncomplete {
 	struct netpack pack;
 	struct uncomplete * next;
 	int read;
-	int header;
+	//int header;
 
 	int type_id;
 	int conn_id;
@@ -117,14 +125,12 @@ static struct uncomplete *
 find_uncomplete(struct queue *q, int fd) {
 	if (q == NULL)
 	{
-		//printf("q is null!");
 		return NULL;
 	}
 	int h = hash_fd(fd);
 	struct uncomplete * uc = q->hash[h];
 	if (uc == NULL)
 	{
-		//printf("uncomplete* is null 1!");
 		return NULL;
 	}
 	if (uc->pack.id == fd) {
@@ -140,7 +146,6 @@ find_uncomplete(struct queue *q, int fd) {
 		}
 		last = uc;
 	}
-	//printf("uncomplete* is null 2!");
 	return NULL;
 }
 
@@ -182,7 +187,8 @@ expand_queue(lua_State *L, struct queue *q) {
 static void
 push_data(lua_State *L, int fd, void *buffer, int size, int clone,int type_id,int conn_id) {
 	if (clone) {
-		void * tmp = skynet_malloc(size);
+		assert(size < 256*1024);
+		void * tmp = SKYNET_MALLOC(size);
 		memcpy(tmp, buffer, size);
 		buffer = tmp;
 	}
@@ -206,8 +212,9 @@ static struct uncomplete *
 save_uncomplete(lua_State *L, int fd) {
 	struct queue *q = get_queue(L);
 	int h = hash_fd(fd);
-	struct uncomplete * uc = skynet_malloc(sizeof(struct uncomplete));
-	memset(uc, 0, sizeof(*uc));
+	size_t size = sizeof(struct uncomplete);
+	struct uncomplete * uc = SKYNET_MALLOC(size);
+	memset(uc, 0, size);
 	uc->next = q->hash[h];
 	uc->pack.id = fd;
 	q->hash[h] = uc;
@@ -227,14 +234,12 @@ static void
 push_more(lua_State *L, int fd, uint8_t *buffer, int size) {
 	if (size < NY_HEAD_SIZE) {
 
-		//printf("push_more() 1 (to short), size:%d \r\n",size);
-
 		struct uncomplete * uc = save_uncomplete(L, fd);
 		uc->read = -1;
-		uc->header = *buffer;
+		//uc->header = *buffer;
 
 		uc->pack.size = size;
-		uc->pack.buffer = skynet_malloc(16);  //减少碎片
+		uc->pack.buffer = SKYNET_MALLOC(16);  //减少碎片
 		memcpy(uc->pack.buffer, buffer, size);
 
 		return;
@@ -248,20 +253,17 @@ push_more(lua_State *L, int fd, uint8_t *buffer, int size) {
 	buffer += NY_HEAD_SIZE;
 	size -= NY_HEAD_SIZE;
 
-
 	if (size < pack_size) {
-
-		//printf("push_more() 2 (need more),pack_size:%d size:%d \r\n",pack_size,size);
 
 		struct uncomplete * uc = save_uncomplete(L, fd);
 		uc->read = size;
 		uc->pack.size = pack_size;
-		uc->pack.buffer = skynet_malloc(pack_size);  
+		uc->type_id = type_id;
+		uc->conn_id = conn_id;
+		uc->pack.buffer = SKYNET_MALLOC(pack_size);  
 		memcpy(uc->pack.buffer, buffer, size);
 		return;
 	}
-
-	//printf("push_more() 3 (more and more), pack_size:%d more size:%d \r\n",pack_size,size);
 
 	push_data(L, fd, buffer, pack_size, 1, type_id, conn_id);
 
@@ -274,6 +276,7 @@ push_more(lua_State *L, int fd, uint8_t *buffer, int size) {
 
 static void
 close_uncomplete(lua_State *L, int fd) {
+
 	struct queue *q = lua_touserdata(L,1);
 	struct uncomplete * uc = find_uncomplete(q, fd);
 	if (uc) {
@@ -286,12 +289,9 @@ close_uncomplete(lua_State *L, int fd) {
 static int
 filter_data_(lua_State *L, int fd, uint8_t * buffer, int size) {
 
-	//printf("recv raw_size:%d\r\n",size);
-
 	struct queue *q = lua_touserdata(L,1);
 	struct uncomplete * uc = find_uncomplete(q, fd);
 	if (uc) {
-		// fill uncomplete
 		if (uc->read < 0) {
 			// read size
 			assert(uc->read == -1);
@@ -302,25 +302,33 @@ filter_data_(lua_State *L, int fd, uint8_t * buffer, int size) {
 
 			int _start = uc->pack.size;
 			int _need = NY_HEAD_SIZE - uc->pack.size;
+		  
+		  uc->pack.size = 0;
+		  uc->pack.buffer = (void*)0;
 
 			for (int i = 0; i < _need; ++i)
 			{
-				bytes[i + _start] = buffer + i;
+					bytes[i + _start] = buffer[i];
 			}
-
+			
 			uint16_t type_id = bytes_to_uint16(bytes);
 			int pack_size = bytes_to_uint32(bytes + 2);
 			uint32_t conn_id = bytes_to_uint32(bytes + 2 + 4);
+			
 			pack_size -= NY_HEAD_SIZE;
-
+			
 			buffer += (_need);
 			size -= (_need);
 
 			uc->pack.size = pack_size;
-			uc->pack.buffer = skynet_malloc(pack_size);
+
+
+			uc->pack.buffer = SKYNET_MALLOC(pack_size);
 			uc->read = 0;
 			uc->type_id = type_id;
 			uc->conn_id = conn_id;
+			
+			printf("\r\n wwww 1 ,type_id:%d,pack_size:%d",type_id,uc->pack.size);
 		}
 		int need = uc->pack.size - uc->read;
 		if (size < need) {
@@ -335,6 +343,9 @@ filter_data_(lua_State *L, int fd, uint8_t * buffer, int size) {
 		buffer += need;
 		size -= need;
 		if (size == 0) {
+			
+			printf("\r\n wwww 3! pack_size:%d,more size:%d,asdfa type_id:%d \r\n",uc->pack.size,size,uc->type_id);
+			
 			lua_pushvalue(L, lua_upvalueindex(TYPE_DATA));
 			lua_pushinteger(L, fd);
 			lua_pushlightuserdata(L, uc->pack.buffer);
@@ -347,27 +358,24 @@ filter_data_(lua_State *L, int fd, uint8_t * buffer, int size) {
 			return 5+2;
 		}
 		// more data
-		//printf("\r\n mordate1! pack_size:%d,more:%d \r\n",uc->pack.size,size);
 		push_data(L, fd, uc->pack.buffer, uc->pack.size, 0,uc->type_id,uc->conn_id);
 		skynet_free(uc);
 		push_more(L, fd, buffer, size);
 		lua_pushvalue(L, lua_upvalueindex(TYPE_MORE));
 		return 2;
 	} else {
+		
 		if (size < NY_HEAD_SIZE) {
 			struct uncomplete * uc = save_uncomplete(L, fd);
 			uc->read = -1;
-			uc->header = *buffer;
+			//uc->header = *buffer;
 
 			uc->pack.size = size;
-			uc->pack.buffer = skynet_malloc(16);  //减少碎片
+			uc->pack.buffer = SKYNET_MALLOC(16);  //减少碎片
 			memcpy(uc->pack.buffer, buffer, size);
-
 			return 1;
 		}
-
-		//printf("recv size:%d\r\n",size);
-
+	
 		uint16_t type_id = bytes_to_uint16(buffer);
 		int pack_size = bytes_to_uint32(buffer+2);
 		uint32_t conn_id = bytes_to_uint32(buffer+2+4);
@@ -375,39 +383,38 @@ filter_data_(lua_State *L, int fd, uint8_t * buffer, int size) {
 		buffer+= NY_HEAD_SIZE;
 		size-= NY_HEAD_SIZE;
 
-		//printf("type_id:%d,pack_size:%d,conn_id:%d,size:%d\r\n",type_id,pack_size,conn_id,size);
-
 		if (size < pack_size) {
 			struct uncomplete * uc = save_uncomplete(L, fd);
 			uc->read = size;
 			uc->pack.size = pack_size;
-			uc->pack.buffer = skynet_malloc(pack_size);
+			assert(pack_size < 256*1024);
+			uc->pack.buffer = SKYNET_MALLOC(pack_size);
 			memcpy(uc->pack.buffer, buffer, size);
 
 			uc->type_id = type_id;
 			uc->conn_id = conn_id;
+			
 			return 1;
 		}
 		if (size == pack_size) {
 			// just one package
 			lua_pushvalue(L, lua_upvalueindex(TYPE_DATA));
 			lua_pushinteger(L, fd);
-			void * result = skynet_malloc(pack_size);
+			assert(pack_size < 256*1024);
+			void * result = SKYNET_MALLOC(pack_size);
 			memcpy(result, buffer, size);
 			lua_pushlightuserdata(L, result);
 			lua_pushinteger(L, size);
 			
 			lua_pushinteger(L, type_id);
 			lua_pushinteger(L, conn_id);
-
 			return 5+2;
 		}
+		
 		// more data
-		//printf("\r\n mordate2! pack_size:%d ",pack_size);
 		push_data(L, fd, buffer, pack_size, 1,type_id,conn_id);
 		buffer += pack_size;
 		size -= pack_size;
-		//printf(" more size:%d \r\n",size);
 		push_more(L, fd, buffer, size);
 		lua_pushvalue(L, lua_upvalueindex(TYPE_MORE));
 		return 2;
@@ -561,7 +568,8 @@ lpack(lua_State *L) {
 		return luaL_error(L, "Invalid size (too long) of data : %d", (int)len);
 	}
 
-	uint8_t * buffer = skynet_malloc(len + 2);
+	assert(len+2 < 256*1024);
+	uint8_t * buffer = SKYNET_MALLOC(len + 2);
 	write_size(buffer, len);
 	memcpy(buffer+2, ptr, len);
 
@@ -595,6 +603,7 @@ luaopen_skynet_nynetpack(lua_State *L) {
 		{ NULL, NULL },
 	};
 	luaL_newlib(L,l);
+
 
 	// the order is same with macros : TYPE_* (defined top)
 	lua_pushliteral(L, "data");

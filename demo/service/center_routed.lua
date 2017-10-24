@@ -23,7 +23,7 @@ local route_message_function = "on_route_message"
 --集群内部服务之间的通信用rpc，与客户端的通信用sproto，其他外部服务可用pb or http进行通信
 --扩展为注册服务方式
 
-function command.ping(source,...)
+function command.ping(source,service_type,node_name,node_id,...)
 	return ...
 end
 
