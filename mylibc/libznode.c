@@ -272,7 +272,8 @@ lsmem_debug_print(lua_State* L) {
 
 int
 luaopen_znode(lua_State *L) {
-
+	gs_L = L;
+	
 	luaL_Reg reg[] = {
 		{"smem_debug_enable",lsmem_debug_enable },
 		{"smem_debug_print",lsmem_debug_print },
