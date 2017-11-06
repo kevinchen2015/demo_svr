@@ -407,11 +407,16 @@ znode_string_completion_cb(int rc, const char *value, const void *data) {
 	struct znode_data_t* d = (struct znode_data_t*)data;
 	struct znode_t* znode = (struct znode_t*)(d->info).znode_;
 	d->info.rc_ = rc;
-	int value_len = strlen(value);
+	int value_len = 0;
+	if(value){
+		value_len = strlen(value); 
+	}
 	(d->info).data_.value_len = value_len;
-	(d->info).data_.value = (char*)zm_malloc(value_len + 1);
-	memcpy((d->info).data_.value, value, value_len);
-	(d->info).data_.value[value_len] = '\0';
+	if(value_len > 0){
+		(d->info).data_.value = (char*)zm_malloc(value_len + 1);
+		memcpy((d->info).data_.value, value, value_len);
+		(d->info).data_.value[value_len] = '\0';
+	}
 	safe_queue_push_back(&znode->zdata_, &(d->node));
 }
 
