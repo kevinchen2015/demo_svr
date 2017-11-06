@@ -30,6 +30,9 @@ struct znode_watch_path_t {
 
 struct znode_t{
 	zhandle_t* zhandle_;
+	char* host;
+	int   timeout;
+
 	struct znode_callback_t cb_;
 	struct safe_queue_t zevent_;
 	struct safe_queue_t zdata_;
@@ -149,8 +152,7 @@ znode_watcher_cb(zhandle_t* zh, int type, int state, const char* path, void* con
 	}
 	else if(type == ZOO_SESSION_EVENT)
 	{
-		if(state == ZOO_EXPIRED_SESSION_STATE)
-		{
+		if(state == ZOO_CONNECTED_STATE) {
 			zoo_set_watcher(znode->zhandle_,znode_watcher_cb);
 			if (znode->watch_node_)
 			{
@@ -161,6 +163,14 @@ znode_watcher_cb(zhandle_t* zh, int type, int state, const char* path, void* con
 					else
 						set_watch(znode, t->path);
 				}
+			}
+		}
+		else if(state == ZOO_EXPIRED_SESSION_STATE)
+		{
+			//reconnect!
+			if(znode->zhandle_) {
+				zookeeper_close(znode->zhandle_);
+				znode->zhandle_ = zookeeper_init(znode->host, znode_watcher_cb, znode->timeout, 0, znode, 0);
 			}
 		}
 		else
@@ -196,6 +206,9 @@ znode_free(znode_handle* zhandle) {
 	struct znode_t* znode = (struct znode_t*)zhandle;
 	safe_queue_uninit(&znode->zevent_);
 	safe_queue_uninit(&znode->zdata_);
+	if(znode->host){
+		zm_free(znode->host);
+	}
 	if (znode->watch_node_)
 	{
 		struct znode_watch_path_t *t, *tmp;
@@ -229,6 +242,11 @@ znode_open(char* host, int timeout,struct znode_callback_t* cb) {
 	safe_queue_init(&znode->zdata_);
 	znode->zdata_.free_ = _zdata_safe_free;
 	znode->watch_node_ = (struct znode_watch_path_t*)0;
+	int host_len = strlen(host);
+	znode->host = zm_malloc(host_len+1);
+	memcpy(znode->host,host,host_len);
+	znode->host[host_len] = '\0';
+	znode->timeout = timeout;
 	znode->zhandle_ = zookeeper_init(host, znode_watcher_cb, timeout, 0, znode, 0);
 	if (!znode->zhandle_) {
 		znode_free(znode);
@@ -242,8 +260,6 @@ znode_close(znode_handle* handle) {
 	struct znode_t* znode = (struct znode_t*)handle;
 	if(znode->zhandle_)
 		zookeeper_close(znode->zhandle_);
-	safe_queue_uninit(&znode->zdata_);
-	safe_queue_uninit(&znode->zevent_);
 	znode_free(znode);
 }
 
