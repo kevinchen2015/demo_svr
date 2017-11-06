@@ -11,17 +11,15 @@
 #include <zookeeper_log.h>
 
 
-static struct node_data_t {
+struct node_data_t {
 	char* path;
 	UT_hash_handle hh;
 	struct znode_high_data_ info;
 }* g_data_root;
 
-
 static struct znode_high_callback g_cb;
 static znode_handle* g_znode_handle;
 static int g_session_cnt;
-
 
 static void 
 _node_data_free(struct node_data_t* data) {
@@ -33,7 +31,6 @@ _node_data_free(struct node_data_t* data) {
 		zm_free(data->path);
 	zm_free(data);
 }
-
 
 static struct node_data_t*
 _node_data_create(char* path,int version,char* value,int value_len) {
@@ -64,7 +61,7 @@ _node_data_add(struct node_data_t* data) {
 			HASH_ADD_STR(g_data_root, path, data);
 
 			if (g_cb.event_cb) {
-				g_cb.event_cb(EVENT_MODIFY, &(t->info));
+				g_cb.event_cb(EVENT_MODIFY, &(data->info));
 			}
 		}
 		else {
@@ -73,7 +70,7 @@ _node_data_add(struct node_data_t* data) {
 	}else {
 		HASH_ADD_STR(g_data_root, path, data);
 		if (g_cb.event_cb) {
-			g_cb.event_cb(EVENT_CREATE, &(t->info));
+			g_cb.event_cb(EVENT_CREATE, &(data->info));
 		}
 	}
 }

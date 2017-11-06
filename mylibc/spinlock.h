@@ -3,10 +3,10 @@
 
 //��windows�����������������
 
-#define SPIN_INIT(q) spinlock_init(&(q)->lock);
-#define SPIN_LOCK(q) spinlock_lock(&(q)->lock);
-#define SPIN_UNLOCK(q) spinlock_unlock(&(q)->lock);
-#define SPIN_DESTROY(q) spinlock_destroy(&(q)->lock);
+#define SPIN_INIT(q) spinlock_init(&((q)->lock));
+#define SPIN_LOCK(q) spinlock_lock(&((q)->lock));
+#define SPIN_UNLOCK(q) spinlock_unlock(&((q)->lock));
+#define SPIN_DESTROY(q) spinlock_destroy(&((q)->lock));
 
 
 #ifdef WINDOWS

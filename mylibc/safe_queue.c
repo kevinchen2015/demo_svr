@@ -3,13 +3,16 @@
 #include "safe_queue.h"
 #include "linked.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void
 safe_queue_init(struct safe_queue_t* queue) {
 	SPIN_INIT(queue);
 	queue->head_ = (struct node_t*)0;
 	queue->tail_ = (struct node_t*)0;
-	queue->free_ = (void*)0;
+	memset(&queue->free_,0x00,sizeof(queue->free_));
 }
 
 void
@@ -26,7 +29,6 @@ safe_queue_uninit(struct safe_queue_t* queue) {
 	}
 	SPIN_DESTROY(queue);
 }
-
 
 void 
 safe_queue_push_back(struct safe_queue_t* queue,struct node_t* node) {

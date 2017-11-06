@@ -30,6 +30,9 @@ extern "C" {
 #include "znode_high.h"
 #include "smemory.h"
 
+
+
+
 static int gs_data_event_cb;
 static int gs_async_error_cb;
 static lua_State* gs_L;		//global only one!

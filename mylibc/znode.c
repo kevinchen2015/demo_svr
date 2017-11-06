@@ -1,6 +1,5 @@
 
 
-
 #include "znode.h"
 #include "linked.h"
 #include "safe_queue.h"
@@ -13,23 +12,23 @@
 
 
 
-static struct znode_event_t {
+struct znode_event_t {
 	struct node_t node;
 	struct znode_event_info_t info;
 };
 
-static struct znode_data_t {
+struct znode_data_t {
 	struct node_t node;
 	struct znode_data_info_t info;
 };
 
-static struct znode_watch_path_t {
+struct znode_watch_path_t {
 	char* path;
 	int   is_watch_child;
 	UT_hash_handle hh;
 };
 
-static struct znode_t{
+struct znode_t{
 	zhandle_t* zhandle_;
 	struct znode_callback_t cb_;
 	struct safe_queue_t zevent_;
@@ -40,7 +39,6 @@ static struct znode_t{
 static void
 default_stat_completion(int rc, const struct Stat *stat, const void *data) {
 
-	
 }
 
 static int 
@@ -102,6 +100,7 @@ znode_data_create(int session,int op_type,char* path,struct znode_t* znode) {
 	memset(&data->info, 0x00, sizeof(struct znode_data_info_t));
 	data->info.session_ = session;
 	data->info.op_type_ = op_type;
+	data->info.znode_ = znode;
 	int path_len = strlen(path);
 	data->info.path_ = zm_malloc(path_len + 1);
 	memcpy(data->info.path_, path, path_len);
@@ -225,16 +224,12 @@ znode_open(char* host, int timeout,struct znode_callback_t* cb) {
 		znode->cb_ = *cb;
 	else
 		memset(&znode->cb_, 0x00, sizeof(struct znode_callback_t));
-		
 	safe_queue_init(&znode->zevent_);
 	znode->zevent_.free_ = _zevent_safe_free;
-
 	safe_queue_init(&znode->zdata_);
 	znode->zdata_.free_ = _zdata_safe_free;
-
 	znode->watch_node_ = (struct znode_watch_path_t*)0;
 	znode->zhandle_ = zookeeper_init(host, znode_watcher_cb, timeout, 0, znode, 0);
-
 	if (!znode->zhandle_) {
 		znode_free(znode);
 		return (znode_handle*)0;
@@ -245,7 +240,10 @@ znode_open(char* host, int timeout,struct znode_callback_t* cb) {
 void 
 znode_close(znode_handle* handle) {
 	struct znode_t* znode = (struct znode_t*)handle;
-	zookeeper_close(znode->zhandle_);
+	if(znode->zhandle_)
+		zookeeper_close(znode->zhandle_);
+	safe_queue_uninit(&znode->zdata_);
+	safe_queue_uninit(&znode->zevent_);
 	znode_free(znode);
 }
 

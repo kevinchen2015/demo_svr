@@ -8,7 +8,7 @@ ZNODE = ./znode
 
 .PHONY : all clean
 
-all : $(TARGET) smq.so rdkafka.so znode.so mytest
+all : $(TARGET) smq.so rdkafka.so znode.so mytest mythread
 
 $(TARGET) : package_proto.c
 	$(CC) $(CFLAGS) -shared -o $@ -I../.. -I$(LUADIR) -I$(SKYNETDIR)  $^
@@ -29,5 +29,8 @@ znode.so : libznode.c linked.c memory_trace.c safe_queue.c smemory.c znode.c zno
 mytest : mytest.c linked.c memory_trace.c safe_queue.c smemory.c znode.c znode_high.c
 	$(CC) $(CFLAGS) -o $@ -I../.. -I$(LUADIR) -I$(SKYNETDIR) -I$(ZOOKEEPER)  -DTHREADED -lzookeeper_mt $^
 
+mythread : mythread.c 
+	g++ -O0 -Wall -ggdb -std=c++11 -pthread -o $@ -I$(ZOOKEEPER) $^
+
 clean :
-	rm -f $(TARGET) smq.so rdkafka.so znode.so mytest
+	rm -f $(TARGET) smq.so rdkafka.so znode.so mytest mythread

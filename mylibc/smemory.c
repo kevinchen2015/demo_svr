@@ -4,12 +4,13 @@
 #include "spinlock.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #define PRE_MALLOC_NUM 8
 
 static int gs_debug_enable = 0;
 
-static struct mem_node_t{
+struct mem_node_t{
 	struct node_t node; //must first member!
 
 	size_t size;
@@ -20,7 +21,7 @@ static struct mem_node_t{
 	}param;
 };
 
-static enum {
+enum {
 	mem_size1 = 0, 
 	mem_size2,	   
 	mem_size3,	   
@@ -37,14 +38,14 @@ static const size_t s_mem_size[] = {
 	10240,
 };
 
-static struct mem_node_debug_t {
+struct mem_node_debug_t {
 	int node_num;
 	int total_size;
 	int used_size;
 };
 
 
-static struct mem_pool{
+struct mem_pool{
 	struct mem_node_t* free_pool[mem_size_large];
 	struct spinlock lock;
 	struct mem_node_debug_t debug[mem_size_large];
@@ -125,7 +126,7 @@ smem_malloc(size_t size,int thread_safe, char* file, int line){
 			if (thread_safe) {
 				SPIN_LOCK(&s_mem_pool);
 			}
-			struct mem_node_t* node = (struct mem_node_t*)node_pop_front(&(( ((s_mem_pool.free_pool[i])))));
+			struct mem_node_t* node = (struct mem_node_t*)node_pop_front((struct node_t**)&(( ((s_mem_pool.free_pool[i])))));
 			if(node)
 				s_mem_pool.debug[i].used_size += size;
 			if (thread_safe) {
@@ -168,7 +169,7 @@ smem_malloc(size_t size,int thread_safe, char* file, int line){
 				for(int j=0;j<PRE_MALLOC_NUM;++j)
 				{
 					struct mem_node_t* node = (struct mem_node_t*)p;
-					node_init(node);
+					node_init((struct node_t*)node);
 					node->size = 0;
 					node->param.chs[0] = 's';
 					node->param.chs[1] = 'm';
@@ -197,7 +198,7 @@ smem_malloc(size_t size,int thread_safe, char* file, int line){
 void 
 smem_free(void* p, int thread_safe){
 	if (!p) return;
-	char* ptr = (void*)p;
+	char* ptr = (char*)p;
 	ptr -= (sizeof(struct mem_node_t));
 	struct mem_node_t* node = (struct mem_node_t*)ptr;
 	if (node->param.chs[0] == 's' && node->param.chs[1] == 'm'){
@@ -232,7 +233,7 @@ smem_free(void* p, int thread_safe){
 					SPIN_LOCK(&s_mem_pool);
 				}
 				s_mem_pool.debug[idx].used_size -= size;
-				node_push_front(&(((s_mem_pool.free_pool[idx]))),(struct node_t*)node);
+				node_push_front((struct node_t**)&(((s_mem_pool.free_pool[idx]))),(struct node_t*)node);
 				if (thread_safe) {
 					SPIN_UNLOCK(&s_mem_pool);
 				}
