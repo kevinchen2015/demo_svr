@@ -29,19 +29,19 @@ const char* value = "ip:192.168.10.53:9999";
 
 static void
 on_data_event(enum znode_high_event event, struct znode_high_data_* data) {
-	printf("\r\n ========event:%d,path:%s",(int)event,data->path);
+	printf("\r\n ++++++++++++event:%d,path:%s",(int)event,data->path);
 }
 
 static void
 on_async_error(char* path, int op_type, int ret) {
-	printf("\r\n ========path:%s,ret:%d",path,ret);
+	printf("\r\n ------------path:%s,ret:%d",path,ret);
 }
 
 int main() {
 
 	smem_debug_enable(1);
 
-	znode_high_set_debug_level(4);
+	znode_high_set_debug_level(2);
 
 	struct znode_high_callback cb;
 	cb.event_cb = on_data_event;
@@ -52,12 +52,16 @@ int main() {
 	znode_high_watch_path("/dp_room", 0);
 
 	int ret = znode_high_acreate("/mytest", value,strlen(value)+1, 1);
-
+	int time_cout = 0;
 	while (1)
 	{
 		znode_high_update();
-		smem_debug_print();
-		usleep(1000*1000);
+		usleep(1000*50);
+
+		if(++time_cout>200){
+			time_cout = 0;
+			smem_debug_print();
+		}
 	}
 
 	znode_high_uninit();

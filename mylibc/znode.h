@@ -66,6 +66,7 @@ extern "C" {
 	void znode_close(znode_handle* handle);
 	void znode_add_watch_path(znode_handle* handle, char* path, int is_watch_child);
 	void znode_remove_watch_path(znode_handle* handle, char* path);
+	int  znode_is_watch_path(znode_handle* handle, char* path);
 	void znode_update(znode_handle* zhandle);
 
 	//sync api

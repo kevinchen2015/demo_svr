@@ -140,8 +140,23 @@ on_async_data(znode_handle* handle, struct znode_data_info_t* info) {
 	}
 	else if (info->op_type_ == ZNODE_OP_GET_CHILDREN) {
 		if (info->rc_ == ZOK) {
+			char temp_path[512] = {0x00};
 			for (int i = 0; i < info->strings_.count; ++i) {
-				znode_aget(g_znode_handle, ++g_session_cnt, info->strings_.data[i]);
+				if(strlen(info->strings_.data[i])+strlen(info->path_) < 511){
+					int idx = strlen(info->path_);
+					memcpy(temp_path,info->path_,idx);
+					temp_path[idx++] = '/';
+					memcpy(temp_path+idx,info->strings_.data[i],strlen(info->strings_.data[i]));
+					idx += strlen(info->strings_.data[i]);
+					temp_path[idx] = '\0';
+					if(!znode_is_watch_path(g_znode_handle,temp_path)) {
+						znode_add_watch_path(g_znode_handle,temp_path,0);
+						znode_aget(g_znode_handle, ++g_session_cnt, temp_path);
+					}
+				}
+				else{
+					printf("\r\n path is to long!!!!!!");
+				}
 			}
 		}
 		else {
@@ -175,6 +190,7 @@ on_async_data(znode_handle* handle, struct znode_data_info_t* info) {
 	}
 	else if (info->op_type_ == ZNODE_OP_DELETE) {
 		_node_data_remove(info->path_);
+		znode_remove_watch_path(g_znode_handle,info->path_);
 	}
 }
 

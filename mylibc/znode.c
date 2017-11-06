@@ -60,7 +60,7 @@ set_watch_child(struct znode_t* node,const char* path){
 	return ret;
 }
 
-static int
+int
 znode_is_watch_path(znode_handle* handle, char* path) {
 	struct znode_t* znode = (struct znode_t*)handle;
 	if (znode->watch_node_)
@@ -276,6 +276,11 @@ znode_add_watch_path(znode_handle* handle,char* path,int is_watch_child){
 	memcpy(node->path, path, path_len);
 	node->path[path_len] = '\0';
 	HASH_ADD_STR(znode->watch_node_, path, node);
+	if(is_watch_child){
+		set_watch_child(znode,path);
+	}else{
+		set_watch(znode,path);
+	}
 }
 
 void
