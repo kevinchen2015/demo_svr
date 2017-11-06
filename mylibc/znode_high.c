@@ -189,8 +189,8 @@ on_async_data(znode_handle* handle, struct znode_data_info_t* info) {
 		}
 	}
 	else if (info->op_type_ == ZNODE_OP_DELETE) {
-		_node_data_remove(info->path_);
 		znode_remove_watch_path(g_znode_handle,info->path_);
+		_node_data_remove(info->path_);
 	}
 }
 
