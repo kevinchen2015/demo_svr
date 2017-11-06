@@ -137,51 +137,6 @@ znode_watcher_cb(zhandle_t* zh, int type, int state, const char* path, void* con
 		event->info.path_[path_len] = '\0';
 	}
 	safe_queue_push_back(&znode->zevent_,&event->node);
-	if(type == ZOO_CREATED_EVENT
-		|| type == ZOO_DELETED_EVENT
-		|| type == ZOO_CHANGED_EVENT){
-		if (znode_is_watch_path(znode, path) == 1){
-			int ret = set_watch(znode, path);
-		}
-	}
-	else if(type == ZOO_CHILD_EVENT)
-	{
-		if (znode_is_watch_path(znode, path) == 1) {
-			int ret = set_watch_child(znode, path);
-		}
-	}
-	else if(type == ZOO_SESSION_EVENT)
-	{
-		if(state == ZOO_CONNECTED_STATE) {
-			zoo_set_watcher(znode->zhandle_,znode_watcher_cb);
-			if (znode->watch_node_)
-			{
-				struct znode_watch_path_t *t, *tmp;
-				HASH_ITER(hh, znode->watch_node_, t, tmp) {
-					if (t->is_watch_child)
-						set_watch_child(znode, t->path);
-					else
-						set_watch(znode, t->path);
-				}
-			}
-		}
-		else if(state == ZOO_EXPIRED_SESSION_STATE)
-		{
-			//reconnect!
-			if(znode->zhandle_) {
-				zookeeper_close(znode->zhandle_);
-				znode->zhandle_ = zookeeper_init(znode->host, znode_watcher_cb, znode->timeout, 0, znode, 0);
-			}
-		}
-		else
-		{
-			printf("\r\n znode_watcher_cb state error? type:%d,state:%d\r\n",type,state);
-		}
-	}
-	else
-	{
-		printf("\r\n znode_watcher_cb type error? type:%d,state:%d\r\n",type,state);	
-	}
 }
 
 //-----------------------------------------------------------------------------------
@@ -305,6 +260,54 @@ znode_update(znode_handle* zhandle) {
 		struct znode_event_t* ev = (struct znode_event_t*)safe_queue_pop_front(&znode->zevent_);
 		if (!ev) {
 			break;
+		}
+		int   type = ev->info.type_;
+		int   state = ev->info.state_;
+		char* path = ev->info.path_;
+		if(type == ZOO_CREATED_EVENT
+			|| type == ZOO_DELETED_EVENT
+			|| type == ZOO_CHANGED_EVENT){
+			if (znode_is_watch_path(znode, path) == 1){
+				int ret = set_watch(znode, path);
+			}
+		}
+		else if(type == ZOO_CHILD_EVENT)
+		{
+			if (znode_is_watch_path(znode, path) == 1) {
+				int ret = set_watch_child(znode, path);
+			}
+		}
+		else if(type == ZOO_SESSION_EVENT)
+		{
+			if(state == ZOO_CONNECTED_STATE) {
+				zoo_set_watcher(znode->zhandle_,znode_watcher_cb);
+				if (znode->watch_node_)
+				{
+					struct znode_watch_path_t *t, *tmp;
+					HASH_ITER(hh, znode->watch_node_, t, tmp) {
+						if (t->is_watch_child)
+							set_watch_child(znode, t->path);
+						else
+							set_watch(znode, t->path);
+					}
+				}
+			}
+			else if(state == ZOO_EXPIRED_SESSION_STATE)
+			{
+				//reconnect!
+				if(znode->zhandle_) {
+					zookeeper_close(znode->zhandle_);
+					znode->zhandle_ = zookeeper_init(znode->host, znode_watcher_cb, znode->timeout, 0, znode, 0);
+				}
+			}
+			else
+			{
+				printf("\r\n znode_watcher_cb state error? type:%d,state:%d\r\n",type,state);
+			}
+		}
+		else
+		{
+			printf("\r\n znode_watcher_cb type error? type:%d,state:%d\r\n",type,state);	
 		}
 		if (znode->cb_.on_watch_) {
 			znode->cb_.on_watch_(znode, &ev->info);
