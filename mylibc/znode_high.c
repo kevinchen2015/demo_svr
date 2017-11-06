@@ -77,6 +77,7 @@ _node_data_add(struct node_data_t* data) {
 
 static void
 _node_data_remove(char* path) {
+	znode_remove_watch_path(g_znode_handle,path);
 	struct node_data_t* t = (struct node_data_t *)0;
 	HASH_FIND_STR(g_data_root,path, t);
 	if (t) {
@@ -189,7 +190,6 @@ on_async_data(znode_handle* handle, struct znode_data_info_t* info) {
 		}
 	}
 	else if (info->op_type_ == ZNODE_OP_DELETE) {
-		znode_remove_watch_path(g_znode_handle,info->path_);
 		_node_data_remove(info->path_);
 	}
 }
