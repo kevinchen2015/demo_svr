@@ -122,6 +122,14 @@ on_watch(znode_handle* handle, struct znode_event_info_t* info) {
 	}
 }
 
+void 
+znode_high_foreach_data(foreach_cb cb) {
+	struct node_data_t *t, *tmp;
+	HASH_ITER(hh, g_data_root, t, tmp) {
+		cb(t->path,&(t->info));
+	}
+}
+
 static void 
 on_async_data(znode_handle* handle, struct znode_data_info_t* info) {
 	if (info->op_type_ == ZNODE_OP_GET) {

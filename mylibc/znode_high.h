@@ -22,6 +22,7 @@ extern "C" {
 		int   value_len;
 	};
 
+	typedef void(*foreach_cb)(char* path,struct znode_high_data_*);
 	
 	typedef void(*on_event_cb)(enum znode_high_event event, struct znode_high_data_* data);
 	typedef void(*on_error_cb)(char* path, int op_type, int ret);
@@ -41,6 +42,7 @@ extern "C" {
 	void znode_high_remove_watch_path(char* path);
 
 	struct znode_high_data_* znode_high_get_data(char* path);
+	void znode_high_foreach_data(foreach_cb cb);
 
 	//sync api
 	int znode_high_create(char* path, char* value, int value_len, int flags);
