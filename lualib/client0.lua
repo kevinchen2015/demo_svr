@@ -74,14 +74,12 @@ end
 function client:send(text)
 	if self:is_connect() then
 		local package = string.pack(">s2", text)
-		
 		--[[
 		local len = text:len()
 		len = len + 10
 		local package = string.pack("I2I4I4",3,len,4)
 		package = package..text
 		]]--
-
 		return socket.send(self.fd, package)
 	end
 	return 0
