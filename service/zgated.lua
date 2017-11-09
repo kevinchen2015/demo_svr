@@ -25,6 +25,7 @@ function server_handle.connect(fd,msg)
 	end
 	fd2agent[fd] = agent
 	skynet.call(agent,"lua","on_connect",fd,skynet.self())
+	skynet.send(receiver_service,"lua","on_gate_agent_connected",agent)
 	return agent
 end
 
@@ -34,6 +35,7 @@ function server_handle.disconnect(fd)
 	skynet.call(agent,"lua","on_disconnect")
 	table.insert(free_db_agentd_pool,agent)
 	fd2agent[fd] = nil
+	skynet.send(receiver_service,"lua","on_gate_agent_disconnected",agent)
 end
 
 function server_handle.message(fd,msg,sz)

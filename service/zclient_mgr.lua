@@ -34,7 +34,7 @@ end
 function CMD.connect(source,id,ip,port)
 	local zclient = create_zclient()
 	id2client[id] = zclient
-	skynet.send(zclient,"lua","connect",ip,port)
+	skynet.send(zclient,"lua","connect",ip,port,id)
 	return zclient
 end
 
