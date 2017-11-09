@@ -32,7 +32,7 @@ local function recv_handle()
 		recv_once()
 		local is_connect = client:is_connect()
 		if is_connect ~= last_connect_state then
-			skynet.send(receiver_service,"lua","on_client_state_changed",id,skynet.self(),last_connect_state)
+			skynet.send(receiver_service,"lua","on_client_state_changed",id,skynet.self(),is_connect)
 			last_connect_state = is_connect
 		end
 
@@ -73,7 +73,7 @@ local function connect(ip,port)
 end
 
 function CMD.connect(source,svr_ip,svr_port,svr_id)
-	
+
 	if client ~= nil then
 		if client:is_connect() and ip == svr_ip and port == svr_port then
 			return

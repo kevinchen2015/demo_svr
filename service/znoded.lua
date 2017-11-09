@@ -138,6 +138,7 @@ local function do_delete_event(path,version,value)
 	local t = JSON:decode(value)
 	disconnect(t.id)
 	t = id2config[t.id]
+	id2peer[t.id] = nil
 	if t.peer then
 		peer2id[t.peer] = nil
 	end
@@ -311,7 +312,7 @@ function CMD.query_service_addr(service_id)
 end
 
 function CMD.cmd(source,cmd,...)
-	callback_handle.on_cmd(source,cmd...)
+	callback_handle.on_cmd(source,cmd,...)
 end
 
 --------------------------------------------------------------------
@@ -359,6 +360,8 @@ function interface.send_to_by_id(id,msg)
 			skynet.send(peer,"lua","send",msg)
 			return znoded_err.OK
 		end
+	else
+		print("peer is null")
 	end
 	return znoded_err.DISCONNECT
 end
@@ -385,6 +388,7 @@ end
 
 function interface.bind_peer_id(peer,id)
 	peer2id[peer] = id
+	id2peer[id] = peer
 end
 
 function interface.set_callback_handle(handle)

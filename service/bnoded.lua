@@ -48,7 +48,7 @@ end
 
 function znoded_calllback_handle.on_recv(peer,msg)
 	--parse msg
-	
+	print("on recv msg:"..msg)
 end
 
 function znoded_calllback_handle.on_agent_connected(peer)
@@ -59,17 +59,29 @@ function znoded_calllback_handle.on_agent_disconnected(peer)
 	
 end
 
-function znoded_calllback_handle.on_client_state_changed(config,old_state)
-	
+local function test_send(id)
+	local config = true
+	while config do
+		config = znode_interface.query_config_by_id(id)
+		if config == nil or config.conn_state == false then
+			break
+		end
+		znode_interface.send_to_by_id(id,"hello!!!! i am "..config.id)
+		skynet.sleep(4)
+	end
 end
 
-function znoded_calllback_handle.on_cmd(source,cmd...)
+function znoded_calllback_handle.on_client_state_changed(config,old_state)
+	if config.conn_state then
+		skynet.fork(test_send,config.id)
+	end
+end
+
+function znoded_calllback_handle.on_cmd(source,cmd,...)
 	cmd_handler[cmd](source,...)
 end
 
 --------------------------------------------------------------------
-
-
 
 
 znode_interface.set_callback_handle(znoded_calllback_handle)
