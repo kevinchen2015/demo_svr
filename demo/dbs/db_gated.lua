@@ -17,7 +17,6 @@ local free_db_agentd_pool = {}
 
 function server_handle.connect(fd,msg)
 	print("connect:"..fd.."|"..msg)
-	geteserver.openclient(fd)
 	local agent = nil
 	if #free_db_agentd_pool > 0 then
 		agent = free_db_agentd_pool[1]
@@ -27,6 +26,7 @@ function server_handle.connect(fd,msg)
 	end
 	fd2agent[fd] = agent
 	skynet.call(agent,"lua","on_connect",fd,skynet.self())
+	geteserver.openclient(fd)
 end
 
 function server_handle.disconnect(fd)
