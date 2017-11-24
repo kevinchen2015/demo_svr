@@ -5,7 +5,7 @@ local server_def = require "server_def"
 local service_util = require "service_util"		
 local sprotoloader = require "sprotoloader"
 local node_util = require "static_node_util"
-
+local netpack = require "skynet.netpack"
 local user_id = 0
 local user_acc = nil
 local user_token = nil
@@ -116,7 +116,8 @@ end
 function on_proxy_message(session,source,msg,sz)
 	
 	local des_type,des_id,src_type,src_id = proto.decode_head(msg,sz)
-
+	local msg = netpack.tostring(msg,sz)
+	
 	if des_type == 0 then
 		on_self_msg(agent,msg,sz)
 		return

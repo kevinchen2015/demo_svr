@@ -2,7 +2,7 @@ local skynet = require "skynet"
 local redis = require "skynet.db.redis"
 local pb = require "protobuf"
 local debug_trace = require "debug_trace"
-
+local netpack = require "skynet.netpack"  
 
 local CMD = {}
 
@@ -18,6 +18,7 @@ local worker_config = {}  --key:type,  value: redis cli config
 
 function on_net_message(session,source,msg,size)
 	local msg_struct = pb.decode("proto.db.msg_struct",msg,size)
+	local m = netpack.tostring(msg,size)
 	local fn = requst_handle[msg_struct.id]
 	if fn then
 		local ret,rsp_id = fn(msg_struct.body,msg_struct.body:len())
