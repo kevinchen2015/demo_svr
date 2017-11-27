@@ -34,12 +34,12 @@ end
 -------------------------------------------------------------------------------
 local function command_db_req_handle (msg_body,size)
 	local common_db_req = pb.decode("proto.db.common_db_req",msg_body,size)
-
+	
 	local result = 0
 	local worker = get_woker(common_db_req.type,common_db_req.client_id)
 	local ret = "worker not find"
 	if worker ~= nil then
-		ret = skynet.call(worker,"lua","execute",common_db_req.cmd,common_db_req.param)
+		ret = skynet.call(worker,"lua","execute",common_db_req.cmd,common_db_req.param,skynet.time())
 	end	
 	local common_db_rsp = {}
 	common_db_rsp.session = common_db_req.session

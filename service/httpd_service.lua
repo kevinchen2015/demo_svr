@@ -3,20 +3,24 @@ local socket = require "skynet.socket"
 local httpd = require "http.httpd"
 local sockethelper = require "http.sockethelper"
 local urllib = require "http.url"
-
+local queue = require "skynet.queue"
 local mode = ...
 local path_router = {}
 local CMD = {}
 
 if mode == "agent" then
 
-----------------------------http agent  start------------------
 
-local function _get_router(path)
+----------------------------http agent  start------------------
+local lock = queue()
+
+local function _get_router(path,id)
 	for k, v in pairs(path_router) do
 		local index_start,index_end = string.find(path,k)
 		if index_start then
-			return v
+			local index = math.fmod(id,#v)
+			index = index+1
+			return v[index]
 		end
 	end
 	return nil
@@ -37,10 +41,20 @@ local function response(id, ...)
 end
 
 function CMD.regist_router(source,path,service)
-	path_router[path] = service
+	if path_router[path] == nil then
+		path_router[path] = {}
+	end
+	table.insert(path_router[path],service)
 end
 
-function CMD.on_http_request(source,id)
+function do_http_request(source,id,time)
+	local time_now = skynet.time()
+	if time_now - time > 50 then
+		respone_default("request timeout!")
+		socket.close(id)
+		return
+	end
+	
 	socket.close(id)
 	socket.start(id)
 	-- limit request body size to 8192 (you can pass nil to unlimit)
@@ -57,7 +71,7 @@ function CMD.on_http_request(source,id)
 					--print(string.format("host: %s", header.host))
 				end		
 			--local rsp_code,tmp = respone_default("can not router request!")
-			local service = _get_router(path) 	--nil
+			local service = _get_router(path,id) 	--nil
 			if service then
 				local q = nil
 				if query then
@@ -77,12 +91,17 @@ function CMD.on_http_request(source,id)
 	socket.close(id)
 end
 
+function CMD.on_http_request(source,id,time)
+	lock(do_http_request,source,id,time)
+end
+
 skynet.start(function()
 	skynet.dispatch("lua", function(session, source, command, ...)
 		local f = assert(CMD[command])
 		skynet.ret(skynet.pack(f(source, ...)))
 	end)
 		
+	lock = queue()
 end)
 
 ----------------------------http agent  end-----------------------
@@ -109,7 +128,7 @@ skynet.start(function()
 	skynet.error("Listen web port 9912")
 
 	socket.start(id , function(id, addr)
-		skynet.send(agent[balance], "lua","on_http_request",id)
+		skynet.send(agent[balance], "lua","on_http_request",id,skynet.time())
 		balance = balance + 1
 		if balance > #agent then
 			balance = 1

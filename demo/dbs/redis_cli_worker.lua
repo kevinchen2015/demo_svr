@@ -18,15 +18,21 @@ function CMD.open(source,conf)
 end
 
 function do_request(req_info)
+	local time_now = skynet.time()
+	if time_now - req_info.time > 50 then
+		return "time_out"
+	end
 	local cmd = req_info.cmd
 	local param = req_info.param
 	local ret = redis_db[cmd](redis_db,string_util.split(param," "))
+	return ret
 end
 
-function CMD.execute(source,cmd,param)
+function CMD.execute(source,cmd,param,time)
 	req_info.cmd = cmd
 	req_info.param = param
-	lock(do_request,req_info)
+	req_info.time = time
+	local ret = lock(do_request,req_info)
 	return ret
 end
 
