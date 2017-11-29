@@ -478,7 +478,7 @@ znode_strings_stat_completion_cb(int rc,
 	{
 		(d->info).version_ = stat->version;
 	}
-	if (strings->count > 0) {
+	if (strings && strings->count > 0) {
 		(d->info).strings_.count = strings->count;
 		(d->info).strings_.data = (char**)zm_malloc(sizeof(char*)*strings->count);
 		for (int i = 0; i<strings->count; ++i)

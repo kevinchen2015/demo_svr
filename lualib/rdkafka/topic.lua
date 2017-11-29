@@ -1,5 +1,5 @@
 
-local librdkafka = require 'rdkafka'
+local librdkafka = require 'rdkafka.librdkafka'
 local KafkaTopicConfig = require 'rdkafka.topic_config'
 
 
@@ -20,7 +20,7 @@ KafkaTopic.__index = KafkaTopic
     'errstr' is set to a human readable error message.
 ]]--
 
-function KafkaTopic.create(kafka_producer, topic_name, topic_config)
+function KafkaTopic.create_for_producer(kafka_producer, topic_name, topic_config)
     assert(kafka_producer.kafka_ ~= nil)
 
     local config = nil
@@ -41,6 +41,26 @@ function KafkaTopic.create(kafka_producer, topic_name, topic_config)
     return topic
 end
 
+function KafkaTopic.create_for_consumer(kafka_consumer, topic_name, topic_config)
+    assert(kafka_consumer.kafka_ ~= nil)
+    
+        local config = nil
+        if topic_config and topic_config.topic_config_ then
+            config = KafkaTopicConfig.create(topic_config).topic_conf_
+            ffi.gc(config, nil)
+        end
+    
+        local rd_topic = librdkafka.rd_kafka_topic_new(kafka_consumer.kafka_, topic_name, config)
+        
+        if rd_topic == nil then
+            --error(librdkafka.rd_kafka_err2str(librdkafka.rd_kafka_errno2err(ffi.errno())))
+        end
+    
+        local topic = {topic_ = rd_topic}
+        setmetatable(topic, KafkaTopic)
+        table.insert(KafkaTopic.kafka_topic_map_[kafka_consumer.kafka_], rd_topic)
+        return topic
+end
 
 --[[
     Returns the topic name

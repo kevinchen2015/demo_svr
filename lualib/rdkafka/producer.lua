@@ -43,6 +43,10 @@ function KafkaProducer.create(kafka_config, destroy_timeout_ms)
 end
 
 function KafkaProducer:release()
+    while librdkafka.rd_kafka_outq_len(self.kafka_) > 0 do
+        librdkafka.rd_kafka_poll(self.kafka_, 10);
+    end
+
     for k, topic_ in pairs(KafkaTopic.kafka_topic_map_[self.kafka_]) do
             librdkafka.rd_kafka_topic_destroy(topic_) 
         end
@@ -106,8 +110,12 @@ function KafkaProducer:produce(kafka_topic, partition, payload, key)
 
     if payload == nil or #payload == 0 then
         if keylen == 0 then
-            return
+            return 
         end
+    end
+
+    if partition ==nil or partition < 0 then
+        partition = -1
     end
 
     local RD_KAFKA_MSG_F_COPY = 0x2
@@ -117,6 +125,7 @@ function KafkaProducer:produce(kafka_topic, partition, payload, key)
     if produce_result == -1 then
         --error(librdkafka.rd_kafka_err2str(librdkafka.rd_kafka_errno2err(ffi.errno())))
     end
+    return produce_result
 end
 
 --[[
