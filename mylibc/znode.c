@@ -377,6 +377,7 @@ znode_get_children(znode_handle* handle,char* path,int* count,char** child_paths
 	stat.version = 0;
 	int ret = zoo_get_children2(znode->zhandle_, path, 1, &strings, &stat);
 	*version = stat.version;
+	*count = strings.count;
 	for (int i = 0; i<strings.count; ++i)
 	{
 		child_paths[i] = strings.data[i];
@@ -452,7 +453,7 @@ znode_strings_completion_cb(int rc,
 	struct znode_data_t* d = (struct znode_data_t*)data;
 	struct znode_t* znode = (struct znode_t*)(d->info).znode_;
 	d->info.rc_ = rc;
-	if (strings->count > 0){
+	if (strings && strings->count > 0){
 		(d->info).strings_.count = strings->count;
 		(d->info).strings_.data = (char**)zm_malloc(sizeof(char*)*strings->count);
 		for (int i = 0; i<strings->count; ++i)
