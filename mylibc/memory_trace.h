@@ -24,8 +24,8 @@ extern "C" {
 	void  on_malloc(void* p, int size, char* file, int line);
 	void  on_free(void* p);
 	void  memory_trace_print();
-	void* my_malloc(int size, char* file, int line);
-	void  my_free(void*p);
+	void* my_zoo_malloc(int size, char* file, int line);
+	void  my_zoo_free(void*p);
 
 #ifdef __cplusplus
 }

@@ -53,9 +53,9 @@ struct mem_pool{
 
 static struct mem_pool s_mem_pool;
 
-void 
-smem_init() {
-	for (int i = 0; i < mem_size_large; ++i) {
+void smem_init() {
+	int i;
+	for (i = 0; i < mem_size_large; ++i) {
 		s_mem_pool.free_pool[i] = (struct mem_node_t*)0;
 		s_mem_pool.debug[i].node_num = 0;
 		s_mem_pool.debug[i].total_size = 0;
@@ -64,16 +64,15 @@ smem_init() {
 	SPIN_INIT(&s_mem_pool);
 }
 
-void
-smem_uninit() {
+void smem_uninit() {
 
 	SPIN_LOCK(&s_mem_pool);
 
 	smem_debug_enable(1);
 	smem_debug_print();
 	smem_debug_enable(0);
-
-	for (int i = 0; i < mem_size_large; ++i) {
+	int i;
+	for (i = 0; i < mem_size_large; ++i) {
 		struct mem_node_t* node = s_mem_pool.free_pool[i];
 		while (node)
 		{
@@ -91,8 +90,7 @@ smem_uninit() {
 	SPIN_DESTROY(&s_mem_pool);
 }
 
-void* 
-smem_malloc(size_t size,int thread_safe, char* file, int line){
+void* smem_malloc(size_t size,int thread_safe, char* file, int line){
 	if (size > s_mem_size[mem_size_large - 1])
 	{
 		size_t all_size = size + sizeof(struct mem_node_t);
@@ -121,7 +119,8 @@ smem_malloc(size_t size,int thread_safe, char* file, int line){
 		return p;
 	}
 	//others
-	for (int i = 0; i < (mem_size_large - 1); ++i) {
+	int i;
+	for (i = 0; i < (mem_size_large - 1); ++i) {
 		if (size < s_mem_size[i]){
 			if (thread_safe) {
 				SPIN_LOCK(&s_mem_pool);
@@ -165,8 +164,8 @@ smem_malloc(size_t size,int thread_safe, char* file, int line){
 				if (thread_safe) {
 					SPIN_UNLOCK(&s_mem_pool);
 				}
-
-				for(int j=0;j<PRE_MALLOC_NUM;++j)
+				int j;
+				for(j=0;j<PRE_MALLOC_NUM;++j)
 				{
 					struct mem_node_t* node = (struct mem_node_t*)p;
 					node_init((struct node_t*)node);
@@ -195,8 +194,7 @@ smem_malloc(size_t size,int thread_safe, char* file, int line){
 	return (struct mem_node_t*)0;
 }
 
-void 
-smem_free(void* p, int thread_safe){
+void smem_free(void* p, int thread_safe){
 	if (!p) return;
 	char* ptr = (char*)p;
 	ptr -= (sizeof(struct mem_node_t));
@@ -259,16 +257,15 @@ smem_free(void* p, int thread_safe){
 	}
 }
 
-void 
-smem_debug_enable(int enable) {
+void smem_debug_enable(int enable) {
 	gs_debug_enable = enable;
 }
 
-void
-smem_debug_print() {
+void smem_debug_print() {
 	printf("\r\n ========= mem debug print ============");
 	printf("\r\n smem pool info:");
-	for (int i = 0; i < mem_size_large;++i) {
+	int i;
+	for (i = 0; i < mem_size_large;++i) {
 		printf("\r\n i:%d,page_size:%d,page_num:%d,total_size:%d,used_size:%d",
 			i, s_mem_size[i], s_mem_pool.debug[i].node_num, s_mem_pool.debug[i].total_size, s_mem_pool.debug[i].used_size);
 	}

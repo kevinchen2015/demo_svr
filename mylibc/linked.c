@@ -5,14 +5,12 @@
 #include <stdio.h>
 
 
-void 
-node_init(struct node_t* node) {
+void node_init(struct node_t* node) {
 	if (!node) return;
 	node->next = (struct node_t*)0;
 }
 
-void 
-node_push_back(struct node_t** head, struct node_t* new_node){
+void node_push_back(struct node_t** head, struct node_t* new_node){
 	if (!(*head))
 	{
 		*head = new_node;
@@ -26,8 +24,7 @@ node_push_back(struct node_t** head, struct node_t* new_node){
 	node->next = new_node;
 }
 
-void
-node_push_front(struct node_t** head, struct node_t* new_node) {
+void node_push_front(struct node_t** head, struct node_t* new_node) {
 	if (!(*head))
 	{
 		*head = new_node;
@@ -37,8 +34,7 @@ node_push_front(struct node_t** head, struct node_t* new_node) {
 	*head = new_node;
 }
 
-struct node_t*
-node_pop_front(struct node_t** head) {
+struct node_t* node_pop_front(struct node_t** head) {
 	if (!(*head)) {
 		return (struct node_t*)0;
 	}
@@ -48,8 +44,7 @@ node_pop_front(struct node_t** head) {
 	return node;
 }
 
-void
-node_remove(struct node_t** head, struct node_t* remove_node){
+void node_remove(struct node_t** head, struct node_t* remove_node){
 	if (!(*head)) return;
 	if ((*head) == remove_node)
 	{

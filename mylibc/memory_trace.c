@@ -47,14 +47,14 @@ void memory_trace_print()
 	}
 }
 
-void* my_malloc(int size, char* file, int line)
+void* my_zoo_malloc(int size, char* file, int line)
 {
 	void* p = malloc(size);
 	on_malloc(p, size, file, line);
 	return p;
 }
 
-void my_free(void*p)
+void my_zoo_free(void*p)
 {
 	on_free(p);
 	free(p);

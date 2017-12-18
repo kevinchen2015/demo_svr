@@ -34,31 +34,32 @@ extern "C" {
 	};
 
 	void znode_high_set_debug_level(int level);
-	int  znode_high_init(char* host, int timeout, struct znode_high_callback* cb);
+	int  znode_high_init(const char* host, int timeout, struct znode_high_callback* cb);
 	void znode_high_uninit();
 	void znode_high_update();
 
-	void znode_high_watch_path(char* path, int is_watch_child);
-	void znode_high_remove_watch_path(char* path);
+	void znode_set_data_buffer_size(int size);
+	void znode_high_watch_path(const char* path, int is_watch_child);
+	void znode_high_remove_watch_path(const char* path);
 
-	struct znode_high_data_* znode_high_get_data(char* path);
+	struct znode_high_data_* znode_high_get_data(const char* path);
 	void znode_high_foreach_data(foreach_cb cb);
 
 	//sync api
-	int znode_high_create(char* path, char* value, int value_len, int flags);
-	int	znode_high_exists(char* path);
-	int znode_high_delete(char* path, int version);
-	int znode_high_get(char* path, char* buffer, int* buffer_len, int* version);
-	int	znode_high_set(char* path, char* buffer, int buffer_len, int version);
-	int znode_high_get_children(char* path, int* count, char** child_paths, int* version);
+	int znode_high_create(const char* path, const char* value, int value_len, int flags);
+	int	znode_high_exists(const char* path);
+	int znode_high_delete(const char* path, int version);
+	int znode_high_get(const char* path, char* buffer, int* buffer_len, int* version);
+	int	znode_high_set(const char* path, const char* buffer, int buffer_len, int version);
+	int znode_high_get_children(const char* path, int* count, char** child_paths, int* version);
 
 	//async api
-	int znode_high_acreate(char* path, char* value, int value_len, int flags);
-	int	znode_high_aexists(char* path);
-	int znode_high_adelete(char* path, int version);
-	int znode_high_aget(char* path);
-	int	znode_high_aset(char* path, char* buffer, int buffer_len, int version);
-	int znode_high_aget_children(char* path);
+	int znode_high_acreate(const char* path, const char* value, int value_len, int flags);
+	int	znode_high_aexists(const char* path);
+	int znode_high_adelete(const char* path, int version);
+	int znode_high_aget(const char* path);
+	int	znode_high_aset(const char* path, const char* buffer, int buffer_len, int version);
+	int znode_high_aget_children(const char* path);
 
 #ifdef __cplusplus
 }

@@ -60,30 +60,31 @@ extern "C" {
 	void zinit();
 	void zuninit();
 	void znode_set_debug_level(int level);
+	int  znode_is_watch_path_by_substr(znode_handle* handle, const char* path);
 
 	//znode
-	znode_handle* znode_open(char* host, int timeout, struct znode_callback_t* cb);
+	znode_handle* znode_open(const char* host, int timeout, struct znode_callback_t* cb);
 	void znode_close(znode_handle* handle);
-	void znode_add_watch_path(znode_handle* handle, char* path, int is_watch_child);
-	void znode_remove_watch_path(znode_handle* handle, char* path);
-	int  znode_is_watch_path(znode_handle* handle, char* path);
+	void znode_add_watch_path(znode_handle* handle, const char* path, int is_watch_child);
+	void znode_remove_watch_path(znode_handle* handle, const char* path);
+	int  znode_is_watch_path(znode_handle* handle, const char* path);
 	void znode_update(znode_handle* zhandle);
 
 	//sync api
-	int znode_create(znode_handle* handle, char* path, char* value, int value_len, int flags);
-	int	znode_exists(znode_handle* handle, char* path);
-	int znode_delete(znode_handle* handle, char* path, int version);
-	int znode_get(znode_handle* handle, char* path, char* buffer, int* buffer_len, int* version);
-	int	znode_set(znode_handle* handle, char* path, char* buffer, int buffer_len, int version);
-	int znode_get_children(znode_handle* handle, char* path, int* count, char** child_paths, int* version);
+	int znode_create(znode_handle* handle, const char* path, const char* value, int value_len, int flags);
+	int	znode_exists(znode_handle* handle, const char* path);
+	int znode_delete(znode_handle* handle, const char* path, int version);
+	int znode_get(znode_handle* handle, const char* path, char* buffer, int* buffer_len, int* version);
+	int	znode_set(znode_handle* handle, const char* path, const char* buffer, int buffer_len, int version);
+	int znode_get_children(znode_handle* handle, const char* path, int* count, char** child_paths, int* version);
 
 	//async api
-	int znode_acreate(znode_handle* handle, int session, char* path, char* value, int value_len, int flags);
-	int	znode_aexists(znode_handle* handle, int session, char* path);
-	int znode_adelete(znode_handle* handle, int session, char* path, int version);
-	int znode_aget(znode_handle* handle, int session, char* path);
-	int	znode_aset(znode_handle* handle, int session, char* path, char* buffer, int buffer_len, int version);
-	int znode_aget_children(znode_handle* handle, int session, char* path);
+	int znode_acreate(znode_handle* handle, int session, const char* path, const char* value, int value_len, int flags);
+	int	znode_aexists(znode_handle* handle, int session, const char* path);
+	int znode_adelete(znode_handle* handle, int session, const char* path, int version);
+	int znode_aget(znode_handle* handle, int session, const char* path);
+	int	znode_aset(znode_handle* handle, int session, const char* path, const char* buffer, int buffer_len, int version);
+	int znode_aget_children(znode_handle* handle, int session, const char* path);
 
 
 #ifdef __cplusplus
