@@ -56,6 +56,7 @@ struct znode_t{
 	struct znode_data_session_t* data_session_;
 	unsigned int watch_handle_counter_;
 	unsigned int data_handle_counter_;
+	char auto_watch_;
 };
 
 //----------------------------base function-----------------------------------------------------
@@ -163,6 +164,7 @@ static struct znode_watch_path_t* get_watch_node(znode_handle* handle, const cha
 	}
 	return (struct znode_watch_path_t*)0;
 }
+
 
 int znode_is_watch_path(znode_handle* handle, const char* path) {
 	struct znode_t* znode = (struct znode_t*)handle;
@@ -389,11 +391,18 @@ znode_handle* znode_open(const char* host, int timeout, struct znode_callback_t*
 	znode->zhandle_ = zookeeper_init(host, znode_watcher_cb, timeout, 0, znode, 0);
 	znode->watch_handle_counter_ = 0;
 	znode->data_handle_counter_ = 0;
+	znode->auto_watch_ = 1;
 	if (!znode->zhandle_) {
 		znode_free(znode);
 		return (znode_handle*)0;
 	}
 	return (znode_handle*)znode;
+}
+
+void znode_set_auto_watch(znode_handle* handle,char enable)
+{
+	struct znode_t* znode = (struct znode_t*)handle;
+	znode->auto_watch_ = enable;
 }
 
 void znode_close(znode_handle* handle) {
@@ -456,17 +465,23 @@ static void _znode_update(struct znode_t* znode) {
 					|| type == ZOO_CHANGED_EVENT){
 
 					//watch once
-					struct znode_watch_path_t* watch_node = get_watch_node(znode, path);
-					if (watch_node){
-						set_watch_simple(znode, path,ENCODE_ID(znode->id_,watch_node->id));
+					if(znode->auto_watch_)
+					{
+						struct znode_watch_path_t* watch_node = get_watch_node(znode, path);
+						if (watch_node){
+							set_watch_simple(znode, path,ENCODE_ID(znode->id_,watch_node->id));
+						}
 					}
 					//printf("\r\n watch node type\r\n");
 				}
 				else if(type == ZOO_CHILD_EVENT)
 				{
-					struct znode_watch_path_t* watch_node = get_watch_node(znode, path);
-					if (watch_node){
-						set_watch_child_simple(znode, path,ENCODE_ID(znode->id_,watch_node->id));
+					if(znode->auto_watch_)
+					{
+						struct znode_watch_path_t* watch_node = get_watch_node(znode, path);
+						if (watch_node){
+							set_watch_child_simple(znode, path,ENCODE_ID(znode->id_,watch_node->id));
+						}
 					}
 					//printf("\r\n child event \r\n");
 				}

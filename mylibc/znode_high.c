@@ -336,6 +336,7 @@ int znode_high_init(const char* host, int timeout, struct znode_high_callback* c
 	callback.on_watch_ = on_watch;
 	callback.on_async_data_ = on_async_data;
 	g_znode_handle = znode_open(host,timeout,&callback);
+	znode_set_auto_watch(g_znode_handle,0);
 	return 0;
 }
 
