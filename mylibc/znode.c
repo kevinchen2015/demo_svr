@@ -417,7 +417,8 @@ void znode_remove_watch_path(znode_handle* handle, const char* path) {
 }
 
 static void _znode_update(struct znode_t* znode) {
-	for(;;){
+	for(;;)
+	{
 		struct znode_event_t* ev = (struct znode_event_t*)safe_queue_pop_front(&znode->zevent_);
 		if (!ev) {
 			break;
@@ -493,7 +494,24 @@ static void _znode_update(struct znode_t* znode) {
 
 			case info_type_data:
 			{
-				if (znode->cb_.on_async_data_) {
+				struct znode_data_info_t* info = &(ev->info.data_info);
+				char vaild = 1;
+				if(info->use_session_ == 1)
+				{
+					struct znode_data_session_t* data_session = znode_find_data_session(znode,info->session_);
+					if(data_session)
+					{
+						if(!copy_session_data(data_session,info))
+						{
+							vaild = 0;
+						}	
+					}
+					else
+					{
+						vaild = 0;
+					}
+				}
+				if (vaild == 1 && znode->cb_.on_async_data_) {
 					znode->cb_.on_async_data_(znode, &(ev->info.data_info) );
 				}
 			}
@@ -698,18 +716,8 @@ if(!znode){\
 	printf("\n znode async data handle .  znode id error %d",node_id);\
 	return;\
 }\
-struct znode_data_session_t* data_session = znode_find_data_session(znode,session_id);\
-if(!data_session){\
-	printf("\n znode async data handle . id is invaild!  id:%d !",session_id);\
-	return;\
-}\
 struct znode_event_t* d = znode_data_create(session_id,znode,1);\
-struct znode_data_info_t* info = &((d->info).data_info);\
-if(!copy_session_data(data_session,info)){\
-	znode_event_free(d);\
-	printf("\n znode async data handle . session data copy faild !  id:%d !",session_id);\
-	return;\
-}
+struct znode_data_info_t* info = &((d->info).data_info);
 
 static void znode_void_completion_cb(int rc, const void *data) {
 	ASYNC_DATA_HANDLE(data);
