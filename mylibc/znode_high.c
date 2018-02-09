@@ -308,6 +308,7 @@ static void on_async_data(znode_handle* handle, struct znode_data_info_t* info) 
 		}
 	}
 	else if(info->op_type_ == ZNODE_OP_SET_WATCH) {
+		if(!info->path_)return;
 		if (info->rc_ == ZOK) {
 			znode_aget(g_znode_handle, ++g_session_cnt, info->path_);
 		}else if(info->rc_ == ZNONODE){
@@ -315,6 +316,7 @@ static void on_async_data(znode_handle* handle, struct znode_data_info_t* info) 
 		}
 	}
 	else if(info->op_type_ == ZNODE_OP_SET_WATCH_CHILDREN) {
+		if(!info->path_)return;
 		_add_to_node_group(info->path_,info->strings_.count,info->strings_.data);
 	}
 }
