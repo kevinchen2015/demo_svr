@@ -179,6 +179,7 @@ static char* _make_full_path(char* parent,char* child_name)
 
 
 static void _add_to_node_group(char* parent,int  child_count,char** child_name){
+	if(!parent) return;
 	struct node_group_t* t = (struct node_group_t *)0;
 	HASH_FIND_STR(g_group_root,parent, t);
 	if(t){
