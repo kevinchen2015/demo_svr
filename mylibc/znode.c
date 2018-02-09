@@ -54,6 +54,8 @@ struct znode_t{
 	unsigned short  watch_node_id_;
 	struct znode_watch_path_t* watch_node_;
 	struct znode_data_session_t* data_session_;
+	unsigned int watch_handle_counter_;
+	unsigned int data_handle_counter_;
 };
 
 //----------------------------base function-----------------------------------------------------
@@ -124,15 +126,28 @@ static char* malloc_and_copy_string(const char* src)
 	return (char*)0;
 }
 
-static void default_stat_completion(int rc, const struct Stat *stat, const void* data);
+static void default_stat_completion(int rc, const char *value, int value_len,
+	const struct Stat *stat, const void *data);
 static int set_watch(struct znode_t* node,const char* path,int id) {
-	int ret = zoo_aexists(node->zhandle_,path,1,default_stat_completion,(void*)id);
+	int ret = zoo_aget(node->zhandle_,path,1,default_stat_completion,(void*)id);
+	return ret;
+}
+
+static void default_stat_completion_simple(int rc, const struct Stat *stat, const void* data){}
+static int set_watch_simple(struct znode_t* node,const char* path,int id) {
+	int ret = zoo_aexists(node->zhandle_,path,1,default_stat_completion_simple,(void*)id);
 	return ret;
 }
 
 static void default_strings_completion(int rc,const struct String_vector *strings,const struct Stat* stat, const void *data);
 static int set_watch_child(struct znode_t* node,const char* path,int id){
 	int ret = zoo_aget_children2(node->zhandle_,path,1,default_strings_completion,(void*)id);
+	return ret;
+}
+
+static void default_strings_completion_simple(int rc,const struct String_vector *strings,const struct Stat* stat, const void *data){}
+static int set_watch_child_simple(struct znode_t* node,const char* path,int id){
+	int ret = zoo_aget_children2(node->zhandle_,path,1,default_strings_completion_simple,(void*)id);
 	return ret;
 }
 
@@ -372,6 +387,8 @@ znode_handle* znode_open(const char* host, int timeout, struct znode_callback_t*
 	znode->host = malloc_and_copy_string(host);
 	znode->timeout = timeout;
 	znode->zhandle_ = zookeeper_init(host, znode_watcher_cb, timeout, 0, znode, 0);
+	znode->watch_handle_counter_ = 0;
+	znode->data_handle_counter_ = 0;
 	if (!znode->zhandle_) {
 		znode_free(znode);
 		return (znode_handle*)0;
@@ -426,10 +443,14 @@ static void _znode_update(struct znode_t* znode) {
 		switch(ev->info_type)
 		{
 			case info_type_event:
-			{
+			{	
 				int   type = ev->info.event_info.type_;
 				int   state = ev->info.event_info.state_;
 				char* path = ev->info.event_info.path_;
+
+				znode->watch_handle_counter_ += 1;
+				//printf("\r\n znode id:%d,handle watch event : %d,type:%d,path:%s",znode->id_,znode->watch_handle_counter_,type,path);
+
 				if(type == ZOO_CREATED_EVENT
 					|| type == ZOO_DELETED_EVENT
 					|| type == ZOO_CHANGED_EVENT){
@@ -437,7 +458,7 @@ static void _znode_update(struct znode_t* znode) {
 					//watch once
 					struct znode_watch_path_t* watch_node = get_watch_node(znode, path);
 					if (watch_node){
-						set_watch(znode, path,ENCODE_ID(znode->id_,watch_node->id));
+						set_watch_simple(znode, path,ENCODE_ID(znode->id_,watch_node->id));
 					}
 					//printf("\r\n watch node type\r\n");
 				}
@@ -445,7 +466,7 @@ static void _znode_update(struct znode_t* znode) {
 				{
 					struct znode_watch_path_t* watch_node = get_watch_node(znode, path);
 					if (watch_node){
-						set_watch_child(znode, path,ENCODE_ID(znode->id_,watch_node->id));
+						set_watch_child_simple(znode, path,ENCODE_ID(znode->id_,watch_node->id));
 					}
 					//printf("\r\n child event \r\n");
 				}
@@ -532,6 +553,10 @@ static void _znode_update(struct znode_t* znode) {
 							}
 						}
 					}
+
+					znode->data_handle_counter_ += 1;
+					//printf("\r\n znode id:%d,handle data event : %d,op_type:%d,path:%s",znode->id_,znode->data_handle_counter_,info->op_type_,info->path_);
+
 					if (znode->cb_.on_async_data_) 
 					{
 						znode->cb_.on_async_data_(znode, &(ev->info.data_info) );
@@ -653,7 +678,8 @@ int znode_get_children(znode_handle* handle, const char* path, int* count, char*
 //------------------async callback---------------------------------------------------------------------
 
 
-static void default_stat_completion(int rc, const struct Stat *stat, const void* data) {
+static void default_stat_completion(int rc, const char *value, int value_len,
+	const struct Stat *stat, const void *data) {
 	long id = (long)(data);
 	id &= 0xffffffff;
 	DECODE_ID(id);
@@ -671,6 +697,12 @@ static void default_stat_completion(int rc, const struct Stat *stat, const void*
 	info->znode_id_ = node_id;
 	if (stat)
 		info->version_ = stat->version;
+	if (value_len > 0){
+		info->data_.value_len = value_len;
+		info->data_.value = (char*)zm_malloc(value_len+1);
+		memcpy(info->data_.value, value, value_len);
+		info->data_.value[value_len] = '\0';
+	}
 	safe_queue_push_back(&znode->zevent_, &(d->node));
 }
 
@@ -708,7 +740,6 @@ static void default_strings_completion(int rc,const struct String_vector *string
 	//printf("\n default_strings_completion watch id  %d,is faild!",watch_id);
 	safe_queue_push_back(&znode->zevent_, &(d->node));
 }
-
 
 #define ASYNC_DATA_HANDLE(data) \
 unsigned long param_id = (unsigned long)(data);\

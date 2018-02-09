@@ -243,7 +243,6 @@ static void _add_to_node_group(char* parent,int  child_count,char** child_name){
 		{
 			if(!znode_is_watch_path(g_znode_handle,_path)) {
 				znode_add_watch_path(g_znode_handle,_path,0);
-				znode_aget(g_znode_handle, ++g_session_cnt, _path);
 			}	
 		}
 	}
@@ -310,7 +309,9 @@ static void on_async_data(znode_handle* handle, struct znode_data_info_t* info) 
 	else if(info->op_type_ == ZNODE_OP_SET_WATCH) {
 		if(!info->path_)return;
 		if (info->rc_ == ZOK) {
-			znode_aget(g_znode_handle, ++g_session_cnt, info->path_);
+			struct node_data_t* t = _node_data_create(info->path_, info->version_,
+				info->data_.value, info->data_.value_len);
+			_node_data_add(t);
 		}else if(info->rc_ == ZNONODE){
 			_node_data_remove(info->path_);
 		}
@@ -357,9 +358,6 @@ void znode_high_update() {
 
 void znode_high_watch_path(const char* path, int is_watch_child) {
 	znode_add_watch_path(g_znode_handle, path, is_watch_child);
-	if(is_watch_child){
-		znode_aget_children(g_znode_handle,++g_session_cnt,path);
-	}
 }
 
 void znode_high_remove_watch_path(const char* path) {
