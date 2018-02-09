@@ -45,6 +45,8 @@ extern "C" {
 		}strings_;
 
 		char use_session_;
+		unsigned short znode_id_;
+		unsigned short watch_id_;
 	};
 
 	typedef void(*on_watch_event_cb)(znode_handle* handle, struct znode_event_info_t* info);

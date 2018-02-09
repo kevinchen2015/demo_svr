@@ -242,14 +242,14 @@ static struct znode_data_session_t* znode_data_session_create(unsigned short ses
 	return data_session;
 }
 
-static struct znode_event_t* znode_data_create(unsigned short session, struct znode_t* znode,char use_session) {
+static struct znode_event_t* znode_data_create(unsigned short session,char use_session) {
 	struct znode_event_t* data = (struct znode_event_t*)zm_malloc(sizeof(struct znode_event_t));
 	node_init(&data->node);
 	data->info_type = info_type_data;
 	memset(&data->info, 0x00, sizeof(struct znode_data_info_t));
 	data->info.data_info.session_ = session;
 	data->info.data_info.op_type_ = ZNODE_OP_NONE;
-	data->info.data_info.znode_ = znode;
+	data->info.data_info.znode_ = (void*)0;
 	data->info.data_info.path_ = (char*)0;
 	data->info.data_info.use_session_ = use_session;
 	return data;
@@ -496,23 +496,46 @@ static void _znode_update(struct znode_t* znode) {
 			{
 				struct znode_data_info_t* info = &(ev->info.data_info);
 				char vaild = 1;
-				if(info->use_session_ == 1)
+				info->znode_ = get_znode_by_id(info->znode_id_);
+				if(znode != info->znode_)
 				{
-					struct znode_data_session_t* data_session = znode_find_data_session(znode,info->session_);
-					if(data_session)
+					vaild = 0;
+				}
+				if(vaild == 1)
+				{
+					if(info->use_session_ == 1)
 					{
-						if(!copy_session_data(data_session,info))
+						struct znode_data_session_t* data_session = znode_find_data_session(znode,info->session_);
+						if(data_session)
+						{
+							if(!copy_session_data(data_session,info))
+							{
+								vaild = 0;
+							}	
+						}
+						else
 						{
 							vaild = 0;
-						}	
+						}
 					}
-					else
+
+					if(info->op_type_ == ZNODE_OP_SET_WATCH 
+						|| info->op_type_ == ZNODE_OP_SET_WATCH_CHILDREN)
 					{
-						vaild = 0;
+						struct znode_watch_path_t *t, *tmp;
+						HASH_ITER(hh, znode->watch_node_, t, tmp) 
+						{
+							if(t && t->id == info->watch_id_)
+							{
+								t->is_watched = 1;
+								info->path_ = malloc_and_copy_string(t->path);
+							}
+						}
 					}
-				}
-				if (vaild == 1 && znode->cb_.on_async_data_) {
-					znode->cb_.on_async_data_(znode, &(ev->info.data_info) );
+					if (znode->cb_.on_async_data_) 
+					{
+						znode->cb_.on_async_data_(znode, &(ev->info.data_info) );
+					}
 				}
 			}
 			break;
@@ -629,95 +652,77 @@ int znode_get_children(znode_handle* handle, const char* path, int* count, char*
 
 //------------------async callback---------------------------------------------------------------------
 
+
 static void default_stat_completion(int rc, const struct Stat *stat, const void* data) {
 	long id = (long)(data);
 	id &= 0xffffffff;
 	DECODE_ID(id);
-	struct znode_watch_path_t *t, *tmp;
 	struct znode_t* znode = get_znode_by_id(node_id);
 	if(!znode)
 	{
 		printf("\n default_stat_completion znode id error %d",node_id);
 		return;
 	}
-	HASH_ITER(hh, znode->watch_node_, t, tmp)
-	{
-		if(t && t->id == watch_id)
-		{
-			if(rc == ZOK)
-			{
-				t->is_watched = 1;
-			}
-			struct znode_event_t* d = znode_data_create(0,znode,0);
-			struct znode_data_info_t* info = &((d->info).data_info);
-			info->rc_ = rc;
-			info->op_type_ = ZNODE_OP_SET_WATCH;
-			if (stat)
-				info->version_ = stat->version;
-			info->path_ = malloc_and_copy_string(t->path);
-			safe_queue_push_back(&znode->zevent_, &(d->node));
-			return;
-		}
-	}
+	struct znode_event_t* d = znode_data_create(0,0);
+	struct znode_data_info_t* info = &((d->info).data_info);
+	info->rc_ = rc;
+	info->op_type_ = ZNODE_OP_SET_WATCH;
+	info->watch_id_ = watch_id;
+	info->znode_id_ = node_id;
+	if (stat)
+		info->version_ = stat->version;
+	safe_queue_push_back(&znode->zevent_, &(d->node));
 }
 
 static void default_strings_completion(int rc,const struct String_vector *strings,const struct Stat* stat, const void *data) {
 	long id = (long)(data);
 	id &= 0xffffffff;
 	DECODE_ID(id);
-	struct znode_watch_path_t *t, *tmp;
 	struct znode_t* znode = get_znode_by_id(node_id);
 	if(!znode)
 	{
 		printf("\n default_strings_completion znode id error %d",node_id);
 		return;
 	}
-
-	HASH_ITER(hh, znode->watch_node_, t, tmp) 
+	struct znode_event_t* d = znode_data_create(0,0);
+	struct znode_data_info_t* info = &((d->info).data_info);
+	info->rc_ = rc;
+	info->op_type_ = ZNODE_OP_SET_WATCH_CHILDREN;
+	info->watch_id_ = watch_id;
+	info->znode_id_ = node_id;
+	if (stat)
+		info->version_ = stat->version;
+	if(rc == ZOK)
 	{
-		if(t && t->id == watch_id)
-		{
-			//create event
-			struct znode_event_t* d = znode_data_create(0,znode,0);
-			struct znode_data_info_t* info = &((d->info).data_info);
-			info->rc_ = rc;
-			info->op_type_ = ZNODE_OP_SET_WATCH_CHILDREN;
-			if (stat)
-				info->version_ = stat->version;
-			info->path_ = malloc_and_copy_string(t->path);
-			if(rc == ZOK)
+		//printf("\n default_strings_completion watch id  %d ,is watched",watch_id);
+		if (strings && strings->count > 0) {
+			info->strings_.count = strings->count;
+			info->strings_.data = (char**)zm_malloc(sizeof(char*)*strings->count);
+			int i;
+			for (i = 0; i<strings->count; ++i)
 			{
-				//printf("\n default_strings_completion watch id  %d ,is watched",watch_id);
-				t->is_watched = 1;
-				if (strings && strings->count > 0) {
-					info->strings_.count = strings->count;
-					info->strings_.data = (char**)zm_malloc(sizeof(char*)*strings->count);
-					int i;
-					for (i = 0; i<strings->count; ++i)
-					{
-						info->strings_.data[i] = malloc_and_copy_string(strings->data[i]);
-					}
-				}
+				info->strings_.data[i] = malloc_and_copy_string(strings->data[i]);
 			}
-			//printf("\n default_strings_completion watch id  %d,is faild!",watch_id);
-			safe_queue_push_back(&znode->zevent_, &(d->node));
-			return;
 		}
 	}
-	//printf("\n default_strings_completion watch id error %d",watch_id);
+	//printf("\n default_strings_completion watch id  %d,is faild!",watch_id);
+	safe_queue_push_back(&znode->zevent_, &(d->node));
 }
+
 
 #define ASYNC_DATA_HANDLE(data) \
 unsigned long param_id = (unsigned long)(data);\
 param_id &= 0xffffffff;\
 DECODE_SESSION_ID(param_id);\
 struct znode_t* znode = get_znode_by_id(node_id);\
-if(!znode){\
-	printf("\n znode async data handle .  znode id error %d",node_id);\
+if(!znode)\
+{\
+	printf("\n ASYNC_DATA_HANDLE znode id error %d",node_id);\
 	return;\
 }\
-struct znode_event_t* d = znode_data_create(session_id,znode,1);\
-struct znode_data_info_t* info = &((d->info).data_info);
+struct znode_event_t* d = znode_data_create(session_id,1);\
+struct znode_data_info_t* info = &((d->info).data_info);\
+info->znode_id_ = node_id;
 
 static void znode_void_completion_cb(int rc, const void *data) {
 	ASYNC_DATA_HANDLE(data);
