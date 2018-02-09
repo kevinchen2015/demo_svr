@@ -548,7 +548,10 @@ static void _znode_update(struct znode_t* znode) {
 						{
 							if(t && t->id == info->watch_id_)
 							{
-								t->is_watched = 1;
+								if(info->rc_ == ZOK)
+								{
+									t->is_watched = 1;
+								}
 								info->path_ = malloc_and_copy_string(t->path);
 							}
 						}
