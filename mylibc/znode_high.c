@@ -27,10 +27,24 @@ struct node_group_t {
 
 static struct znode_high_callback g_cb;
 static znode_handle* g_znode_handle;
-static int g_session_cnt;
+static unsigned short g_session_cnt;
 static char temp_path[1024] = {0x00};
 static int data_buffer_size = 1024*512;
 static char* data_buff = (char*)0;
+
+
+static char* malloc_copy_string(const char* src)
+{
+	if(!src) return (char*)0;
+	int path_len = strlen(src);
+	if(path_len > 0){
+		char* target  = (char*)zm_malloc(path_len + 1);
+		memcpy(target , src, path_len);
+		target[path_len] = '\0';
+		return target;
+	}
+	return (char*)0;
+}
 
 void znode_set_data_buffer_size(int size){
 	if(data_buff)
@@ -40,6 +54,7 @@ void znode_set_data_buffer_size(int size){
 	data_buffer_size = size;
 	data_buff = (char*)zm_malloc(data_buffer_size);
 }
+
 static void _node_data_free(struct node_data_t* data) {
 	if(data->info.path)
 		zm_free(data->info.path);
@@ -53,13 +68,8 @@ static void _node_data_free(struct node_data_t* data) {
 static struct node_data_t* _node_data_create(const char* path,int version,const char* value,int value_len) {
 	struct node_data_t* t = (struct node_data_t*)zm_malloc(sizeof(struct node_data_t));
 	t->info.version = version;
-	int path_len = strlen(path);
-	t->path = (char*)zm_malloc(path_len + 1);
-	memcpy(t->path, path, path_len);
-	t->path[path_len] = '\0';
-	t->info.path = (char*)zm_malloc(path_len + 1);
-	memcpy(t->info.path, path, path_len);
-	t->info.path[path_len] = '\0';
+	t->path = malloc_copy_string(path);
+	t->info.path = malloc_copy_string(path);
 	t->info.value = (char*)zm_malloc(value_len);
 	memcpy(t->info.value, value, value_len);
 	t->info.value_len = value_len;
@@ -114,13 +124,15 @@ struct znode_high_data_* znode_high_get_data(const char* path) {
 }
 
 static void on_watch(znode_handle* handle, struct znode_event_info_t* info) {
+	if(g_znode_handle != handle) return;
+
 	if (info->type_ == ZOO_CREATED_EVENT 
 		|| info->type_ == ZOO_CHANGED_EVENT) {
 		znode_aget(g_znode_handle, ++g_session_cnt, info->path_);
 	}
 	else if (info->type_ == ZOO_DELETED_EVENT) {
 		if(znode_is_watch_path_by_substr(g_znode_handle,info->path_)){
-			//do nothing Èç¹ûÊÇ×Ó½Úµã£¬ÐèÒªÓÃ×Ó½ÚµãÁÐ±íÅÐ¶Ï
+			//do nothing ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó½Úµã£¬ï¿½ï¿½Òªï¿½ï¿½ï¿½Ó½Úµï¿½ï¿½Ð±ï¿½ï¿½Ð¶ï¿½
 		}
 		else{
 			_node_data_remove(info->path_);  
@@ -169,9 +181,7 @@ static char* _make_full_path(char* parent,char* child_name)
 static void _add_to_node_group(char* parent,int  child_count,char** child_name){
 	struct node_group_t* t = (struct node_group_t *)0;
 	HASH_FIND_STR(g_group_root,parent, t);
-
 	if(t){
-		//±È¶Ô²îÒì,¼õÉÙµÄ
 		int i;
 		for(i = 0;i < t->child_count;++i){
 			int finded = 0;
@@ -189,7 +199,6 @@ static void _add_to_node_group(char* parent,int  child_count,char** child_name){
 				}
 			}
 		}
-		//Ë¢ÐÂ×îÐÂ,¼òµ¥ÊµÏÖ
 		for(i = 0;i < t->child_count;++i){
 			if(t->child_name[i])
 				zm_free(t->child_name[i]);
@@ -198,22 +207,17 @@ static void _add_to_node_group(char* parent,int  child_count,char** child_name){
 		{
 			zm_free(t->child_name);
 		}
-		int num = 0;
 		t->child_count = child_count;
 		t->child_name = (char**)0;
 		if(child_count > 0)
 		{
 			t->child_name = (char**)zm_malloc(sizeof(char*)*child_count);
 			for(i = 0;i < child_count; ++i) {
-			num = strlen(child_name[i]);
-			t->child_name[i] = (char*)zm_malloc(num+1);
-			memcpy(t->child_name[i],child_name[i],num);
-			t->child_name[i][num] = '\0';
+				t->child_name[i] = malloc_copy_string(child_name[i]);
 			}
 		}
 	}
 	else{
-		
 		t = (struct node_group_t *)zm_malloc(sizeof(struct node_group_t));
 		int num = strlen(parent);
 		t->path = (char*)zm_malloc(num+1);
@@ -226,10 +230,7 @@ static void _add_to_node_group(char* parent,int  child_count,char** child_name){
 			t->child_name = (char**)zm_malloc(sizeof(char*)*child_count);
 			int i;
 			for(i = 0;i < child_count; ++i) {
-			num = strlen(child_name[i]);
-			t->child_name[i] = (char*)zm_malloc(num+1);
-			memcpy(t->child_name[i],child_name[i],num);
-			t->child_name[i][num] = '\0';
+				t->child_name[i] = malloc_copy_string(child_name[i]);
 			}
 		}
 		HASH_ADD_STR(g_group_root,path,t);
@@ -247,6 +248,8 @@ static void _add_to_node_group(char* parent,int  child_count,char** child_name){
 	}
 }
 static void on_async_data(znode_handle* handle, struct znode_data_info_t* info) {
+	if(g_znode_handle != handle) return;
+
 	if (info->op_type_ == ZNODE_OP_GET) {
 		if (info->rc_ == ZOK) {
 			struct node_data_t* t = _node_data_create(info->path_, info->version_,
@@ -297,11 +300,21 @@ static void on_async_data(znode_handle* handle, struct znode_data_info_t* info) 
 	}
 	else if (info->op_type_ == ZNODE_OP_DELETE) {
 		if(znode_is_watch_path_by_substr(g_znode_handle,info->path_)){
-			//do nothing Èç¹ûÊÇ×Ó½Úµã£¬ÐèÒªÓÃ×Ó½ÚµãÁÐ±íÅÐ¶Ï
+			//do nothing
 		}
 		else{
 			_node_data_remove(info->path_);  
 		}
+	}
+	else if(info->op_type_ == ZNODE_OP_SET_WATCH) {
+		if (info->rc_ == ZOK) {
+			znode_aget(g_znode_handle, ++g_session_cnt, info->path_);
+		}else if(info->rc_ == ZNONODE){
+			_node_data_remove(info->path_);
+		}
+	}
+	else if(info->op_type_ == ZNODE_OP_SET_WATCH_CHILDREN) {
+		_add_to_node_group(info->path_,info->strings_.count,info->strings_.data);
 	}
 }
 
@@ -336,9 +349,7 @@ void znode_high_uninit() {
 }
 
 void znode_high_update() {
-	if (g_znode_handle) {
-		znode_update(g_znode_handle);
-	}
+	znode_update();
 }
 
 void znode_high_watch_path(const char* path, int is_watch_child) {

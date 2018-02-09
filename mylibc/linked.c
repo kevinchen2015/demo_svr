@@ -44,6 +44,7 @@ struct node_t* node_pop_front(struct node_t** head) {
 	return node;
 }
 
+
 void node_remove(struct node_t** head, struct node_t* remove_node){
 	if (!(*head)) return;
 	if ((*head) == remove_node)
