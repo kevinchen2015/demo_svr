@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 	enum znode_high_event {
-		EVENT_CREATE,
+		EVENT_CREATE = 0,
 		EVENT_DELETE,
 		EVENT_MODIFY,
 	};
