@@ -5,7 +5,6 @@
 #include "safe_queue.h"
 #include "smemory.h"
 #include "uthash.h"
-#include "spinlock.h"
 
 #include <stdio.h>
 
@@ -60,7 +59,6 @@ struct znode_t{
 	unsigned int data_handle_counter_;
 	char auto_watch_;
 	char vaild_;
-	//struct spinlock lock;
 };
 
 //----------------------------base function-----------------------------------------------------
@@ -330,8 +328,6 @@ static void znode_watcher_cb(zhandle_t* zh, int type, int state, const char* pat
 void zinit() {
 	g_znode_id = 1;
 	for(unsigned short i = 0;i < ZNODE_NUM;++i){
-		if(g_znodes[i])
-			zm_free(g_znodes[i]);
 		g_znodes[i] = (struct znode_t*) 0;
 	}
 	g_last_time = get_tick_ms();
@@ -342,6 +338,8 @@ void zuninit() {
 	zm_uninit();
 	g_znode_id = 0;
 	for(unsigned short i = 0;i < ZNODE_NUM;++i){
+		//if(g_znodes[i])
+		//	zm_free(g_znodes[i]);     //故意泄露
 		g_znodes[i] = (struct znode_t*) 0;
 	}
 }
@@ -352,10 +350,8 @@ void znode_set_debug_level(int level) {
 
 static void znode_free(znode_handle* zhandle) {
 	struct znode_t* znode = (struct znode_t*)zhandle;
-	//SPIN_LOCK(znode);
 	if(znode->id_ < ZNODE_NUM)
 		g_znodes[znode->id_] = (struct znode_t*)0;
-	//SPIN_UNLOCK(znode);
 	safe_queue_uninit(&znode->zevent_);
 	if(znode->host){
 		zm_free(znode->host);
@@ -377,7 +373,6 @@ static void znode_free(znode_handle* zhandle) {
 		znode->data_session_ = (struct znode_data_session_t*)0;
 	}
 	zode->vaild_ = 0;
-	//SPIN_DESTROY(znode);
 	//zm_free(znode);
 }
 
@@ -418,7 +413,6 @@ znode_handle* znode_open(const char* host, int timeout, struct znode_callback_t*
 	znode->id_ = g_znode_id++;
 	g_znodes[znode->id_] = znode;
 	znode->vaild_ = 1;
-	//SPIN_INIT(znode);
 	return (znode_handle*)znode;
 }
 
