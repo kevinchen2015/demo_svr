@@ -71,6 +71,7 @@ extern "C" {
 	void znode_remove_watch_path(znode_handle* handle, const char* path);
 	int  znode_is_watch_path(znode_handle* handle, const char* path);
 	void znode_set_auto_watch(znode_handle* handle,char enable);
+	char znode_is_vaild(znode_handle* handle);
 
 	//sync api
 	int znode_create(znode_handle* handle, const char* path, const char* value, int value_len, int flags);
