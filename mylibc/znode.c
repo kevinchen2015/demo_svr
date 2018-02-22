@@ -372,7 +372,7 @@ static void znode_free(znode_handle* zhandle) {
 		}
 		znode->data_session_ = (struct znode_data_session_t*)0;
 	}
-	zode->vaild_ = 0;
+	znode->vaild_ = 0;
 	//zm_free(znode);
 }
 
