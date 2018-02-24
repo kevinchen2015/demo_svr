@@ -597,8 +597,7 @@ static void _znode_update(struct znode_t* znode) {
 
 					znode->data_handle_counter_ += 1;
 					//printf("\r\n znode id:%d,handle data event : %d,op_type:%d,path:%s",znode->id_,znode->data_handle_counter_,info->op_type_,info->path_);
-
-					if (znode->cb_.on_async_data_) 
+					if (vaild == 1 && znode->cb_.on_async_data_) 
 					{
 						znode->cb_.on_async_data_(znode, &(ev->info.data_info) );
 					}
