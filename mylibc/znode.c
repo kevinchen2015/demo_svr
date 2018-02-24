@@ -157,13 +157,11 @@ static int set_watch_child_simple(struct znode_t* node,const char* path,int id){
 char znode_is_vaild(znode_handle* handle)
 {
 	if(!handle)
-		return false;
-
+		return 0;
 	struct znode_t* znode = (struct znode_t*)handle;
 	if(znode->vaild_!=1)
-		return false;
-
-	return true;
+		return 0;
+	return 1;
 }
 
 static struct znode_watch_path_t* get_watch_node(znode_handle* handle, const char* path){
@@ -286,15 +284,15 @@ static struct znode_event_t* znode_data_create(unsigned short session,char use_s
 	return data;
 }
 
-static bool copy_session_data(struct znode_data_session_t* session,znode_data_info_t* data){
+static char copy_session_data(struct znode_data_session_t* session,struct znode_data_info_t* data){
 	unsigned int session_id = (unsigned int)data->session_;
 	if(session_id != session->session_ || data->znode_ != session->znode_)
 	{
-		return false;
+		return 0;
 	}
 	data->op_type_ = session->op_type_;
 	data->path_ = malloc_and_copy_string(session->path_);
-	return true;
+	return 1;
 }
 
 static void znode_watch_free(struct znode_watch_path_t* node) {
@@ -418,7 +416,7 @@ znode_handle* znode_open(const char* host, int timeout, struct znode_callback_t*
 
 void znode_set_auto_watch(znode_handle* handle,char enable)
 {
-	if(!znode_is_vaild(handle)) return;
+	if(0==znode_is_vaild(handle)) return;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode->auto_watch_ = enable;
 }
@@ -431,7 +429,7 @@ void znode_close(znode_handle* handle) {
 }
 
 void znode_add_watch_path(znode_handle* handle, const char* path, int is_watch_child){
-	if(!znode_is_vaild(handle)) return;
+	if(0==znode_is_vaild(handle)) return;
 	struct znode_t* znode = (struct znode_t*)handle;
 	if (znode_is_watch_path(znode, path))
 		return;
@@ -569,7 +567,7 @@ static void _znode_update(struct znode_t* znode) {
 						struct znode_data_session_t* data_session = znode_find_data_session(znode,info->session_);
 						if(data_session)
 						{
-							if(!copy_session_data(data_session,info))
+							if(0==copy_session_data(data_session,info))
 							{
 								vaild = 0;
 							}	
@@ -669,7 +667,7 @@ void znode_update()
 //------------sync api----------------------------------------------------------------------------------
 
 int znode_create(znode_handle* handle, const char* path, const char* value, int value_len, int flags) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	int rc = zoo_create(znode->zhandle_, path, value, value_len,
 		&ZOO_OPEN_ACL_UNSAFE, flags, (char*)0,0);
@@ -677,21 +675,21 @@ int znode_create(znode_handle* handle, const char* path, const char* value, int 
 }
 
 int znode_exists(znode_handle* handle, const char* path) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	int rc = zoo_exists(znode->zhandle_, path, 1, NULL);
 	return rc;
 }
 
 int znode_delete(znode_handle* handle, const char* path, int version) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	int rc = zoo_delete(znode->zhandle_, path, version);
 	return rc;
 }
 
 int znode_get(znode_handle* handle, const char* path, char* buffer, int* buffer_len, int* version) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	struct Stat stat;
 	stat.version = 0;
@@ -701,14 +699,14 @@ int znode_get(znode_handle* handle, const char* path, char* buffer, int* buffer_
 }
 
 int znode_set(znode_handle* handle, const char* path, const char* buffer, int buffer_len, int version) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	int rc = zoo_set(znode->zhandle_, path, buffer, buffer_len, version);
 	return rc;
 }
 
 int znode_get_children(znode_handle* handle, const char* path, int* count, char** child_paths, int* version) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	struct String_vector strings;
 	struct Stat stat;
@@ -913,7 +911,7 @@ static void znode_strings_stat_completion_cb(int rc,
 //------------------------async api-----------------------------------------------------------------------
 
 int znode_acreate(znode_handle* handle, unsigned short session, const char* path, const char* value, int value_len, int flags) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode_data_session_create(session,ZNODE_OP_CREATE,path,znode);
 	unsigned int param_id = ENCODE_SESSION_ID(znode->id_,session); 
@@ -923,7 +921,7 @@ int znode_acreate(znode_handle* handle, unsigned short session, const char* path
 }
 
 int znode_adelete(znode_handle* handle, unsigned short session, const char* path, int version) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode_data_session_create(session,ZNODE_OP_DELETE,path,znode);
 	unsigned int param_id = ENCODE_SESSION_ID(znode->id_,session); 
@@ -932,7 +930,7 @@ int znode_adelete(znode_handle* handle, unsigned short session, const char* path
 }
 
 int znode_aexists(znode_handle* handle, unsigned short session, const char* path) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode_data_session_create(session,ZNODE_OP_EXISTS,path,znode);
 	unsigned int param_id = ENCODE_SESSION_ID(znode->id_,session); 
@@ -941,7 +939,7 @@ int znode_aexists(znode_handle* handle, unsigned short session, const char* path
 }
 
 int znode_aget(znode_handle* handle, unsigned short session, const char* path) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode_data_session_create(session,ZNODE_OP_GET,path,znode);
 	unsigned int param_id = ENCODE_SESSION_ID(znode->id_,session); 
@@ -950,7 +948,7 @@ int znode_aget(znode_handle* handle, unsigned short session, const char* path) {
 }
 
 int znode_aset(znode_handle* handle, unsigned short session, const char* path, const char* buffer, int buffer_len, int version) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode_data_session_create(session,ZNODE_OP_SET,path,znode);
 	unsigned int param_id = ENCODE_SESSION_ID(znode->id_,session); 
@@ -959,7 +957,7 @@ int znode_aset(znode_handle* handle, unsigned short session, const char* path, c
 }
 
 int znode_aget_children(znode_handle* handle, unsigned short session, const char* path) {
-	if(!znode_is_vaild(handle)) return -1;
+	if(0==znode_is_vaild(handle)) return -1;
 	struct znode_t* znode = (struct znode_t*)handle;
 	znode_data_session_create(session,ZNODE_OP_GET_CHILDREN,path,znode);
 	unsigned int param_id = ENCODE_SESSION_ID(znode->id_,session); 
