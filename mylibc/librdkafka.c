@@ -58,7 +58,12 @@ static struct node_t* node_find(rd_kafka_conf_t* conf)
 static struct node_t* node_find_by_rk(rd_kafka_t* rk)
 {
 	struct node_t* t = (struct node_t *)0;
-	HASH_FIND_PTR(g_data_root,rk,t);
+	struct node_t* tmp = t;
+	//HASH_FIND_PTR(g_data_root,&rk,t); 
+	HASH_ITER(hh,g_data_root,t,tmp){
+		if(t->rk == rk)
+			return t;
+	}
 	return t;
 }
 
@@ -109,14 +114,14 @@ on_delivery(rd_kafka_t *rk,
 {
 	struct node_t* node = node_find_by_rk(rk);
 	if(node) 
-	{	
+	{
 		lua_State* L  = node->L;
 		lua_rawgeti(L, LUA_REGISTRYINDEX, node->cb[delivery_cb]);
 		lua_pushlightuserdata(L,rk);
 		lua_pushinteger(L,(int)rkmessage->err);
 		lua_pushlightuserdata(L,rkmessage->rkt);
 		lua_pushinteger(L,rkmessage->partition);
-		lua_pushnumber(L,rkmessage->offset);
+		lua_pushinteger(L,rkmessage->offset);
 		lua_pushinteger(L,rkmessage->len);
 		//lua_pushlstring(L,(const char*)payload,len);
 		//lua_pushlightuserdata(L,opaque);
