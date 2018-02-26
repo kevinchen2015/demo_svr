@@ -14,11 +14,10 @@ local KafkaConsumer = {
 KafkaConsumer.__index = KafkaConsumer
 
 function KafkaConsumer.create(kafka_config, destroy_timeout_ms)
-    local config = nil
-    if kafka_config ~= nil then
-        config = KafkaConfig.create(kafka_config).kafka_conf_
-    end
-
+    local config = kafka_config.kafka_conf_
+    --if kafka_config ~= nil then
+    --    config = KafkaConfig.create(kafka_config).kafka_conf_
+    --end
     local ERRLEN = 256
     local kafka,errbuf = librdkafka.rd_kafka_new(librdkafka.RD_KAFKA_CONSUMER, config, errbuf, ERRLEN)
 

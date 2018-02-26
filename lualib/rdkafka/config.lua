@@ -73,12 +73,12 @@ function KafkaConfig:set_delivery_cb(callback)
     if callback then
         self.cb_.dr_cb_ = callback
         librdkafka.rd_kafka_conf_set_cb(self.kafka_conf_,0,
-            function(rk, payload, len, err)
-                local errstr = nil
-                if err ~= librdkafka.RD_KAFKA_RESP_ERR_NO_ERROR then
-                    errstr = librdkafka.rd_kafka_err2str(err)
-                end
-                callback(payload, tonumber(len), errstr)
+            function(rk,err,rkt, partition,offset, len)
+                --local errstr = nil
+                --if err ~= librdkafka.RD_KAFKA_RESP_ERR_NO_ERROR then
+                --    errstr = librdkafka.rd_kafka_err2str(err)
+                --end
+                callback(rk,err,rkt,partition,offset,len)
             end)
     end
 end
